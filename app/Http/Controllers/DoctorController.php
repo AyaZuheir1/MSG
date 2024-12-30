@@ -3,34 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Doctor;
-<<<<<<< HEAD
-use Illuminate\Http\Request;
-
-class DoctorController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-    }
-
-    public function store(Request $request)
-    {
-       
-    }
-
-    public function show($id)
-    {
-       
-    }
-
-    public function update(Request $request, $id)
-    {
-       
-=======
-use App\Models\Patient;
-use App\Models\Review;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -137,14 +109,10 @@ class DoctorController extends Controller implements HasMiddleware
 
         DB::commit();
         // event to notify admin that the user has  changed their informations 
->>>>>>> 66f3f95 (n commit)
     }
 
     public function destroy($id)
     {
-<<<<<<< HEAD
-       
-=======
         Doctor::destroy($id);
         return [
             'code' => 200,
@@ -152,14 +120,5 @@ class DoctorController extends Controller implements HasMiddleware
         ];
     }
 
-    public function reviews($id)
-    {
-        // $reviews = Review::where('doctor_id',$id);
-        return [
-            'code' => 200,
-            'message' => 'success',
-            // 'reviews' => $reviews,
-        ];
->>>>>>> 66f3f95 (n commit)
-    }
+   
 }

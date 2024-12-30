@@ -6,19 +6,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-<<<<<<< HEAD
-=======
 use Laravel\Sanctum\HasApiTokens;
->>>>>>> 66f3f95 (n commit)
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-<<<<<<< HEAD
-    use HasFactory, Notifiable;
-=======
     use HasFactory, Notifiable ,HasApiTokens;
->>>>>>> 66f3f95 (n commit)
 
     protected $fillable = [
         'username',

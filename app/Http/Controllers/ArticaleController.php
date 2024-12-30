@@ -10,17 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ArticaleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreArticaleRequest $request)
     {
         $request->validated();
@@ -36,17 +26,6 @@ class ArticaleController extends Controller
         ];
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Articale $articale)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateArticaleRequest $request, Articale $articale)
     {
         $request->validated();
@@ -62,9 +41,6 @@ class ArticaleController extends Controller
         ];
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Articale $articale)
     {
         Article::softDeletes($articale->id);

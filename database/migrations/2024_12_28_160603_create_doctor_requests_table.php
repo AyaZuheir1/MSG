@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('doctors', function (Blueprint $table) {
+        Schema::create('doctor_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('first_name');
             $table->string('last_name');
+            $table->string('email')->unique();
+            $table->string('license_number')->unique();
             $table->string('major');
-            $table->string('license_number');
             $table->string('country');
             $table->string('phone_number');
-            $table->text('bio')->nullable();
-            $table->string('image')->nullable();
+            $table->string('image')->nullable(); 
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamps();
         });
     }
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('doctors');
+        Schema::dropIfExists('doctor_requests');
     }
 };
