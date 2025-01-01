@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('major');
             $table->string('license_number');
             $table->string('country');
+            $table->string('phone_number');
             $table->text('bio')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();
