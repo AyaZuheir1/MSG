@@ -4,10 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+<<<<<<< HEAD
 
 class Patient extends Model
 {
     use HasFactory;
+=======
+use Laravel\Sanctum\HasApiTokens;
+
+class Patient extends Model
+{
+    use HasFactory, HasApiTokens;
+>>>>>>> 66f3f95 (n commit)
 
     protected $fillable = [
         'user_id',

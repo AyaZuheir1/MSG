@@ -19,6 +19,10 @@ return new class extends Migration
             $table->string('major');
             $table->string('license_number');
             $table->string('country');
+<<<<<<< HEAD
+=======
+            $table->string('phone_number');
+>>>>>>> 66f3f95 (n commit)
             $table->text('bio')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();
