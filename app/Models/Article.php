@@ -12,9 +12,12 @@ class Article extends Model
     protected $fillable = [
         'admin_id',
         'title',
+        'summary',
+        'image',
         'content',
         'published_at',
     ];
+
 
     public function admin()
     {

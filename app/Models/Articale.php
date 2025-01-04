@@ -4,18 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Articale extends Model
 {
-    /** @use HasFactory<\Database\Factories\ArticaleFactory> */
-    use HasFactory ,SoftDeletes;
+    
+    use HasFactory ;
 
     protected $fillable = [
-        'title','content'
-    ]; 
-    public function admin(){
-        $this->belongsTo(Admin::class);
+        'admin_id',
+        'title',
+        'summary',
+        'image',
+        'content',
+        'published_at',
+    ];
+
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class);
     }
-    
 }

@@ -13,14 +13,15 @@ return new class extends Migration
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
+            $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade')->nullable();
             $table->foreignId('doctor_id')->constrained('doctors')->onDelete('cascade');
             $table->date('date');
-            $table->string('day');
-            $table->string('time');
-            $table->enum('status', ['Pending', 'Confirmed', 'Canceled', 'Completed']);
+            $table->string('period'); // صباحية أو مسائية
+            $table->time('start_time');
+            $table->time('end_time');
+            $table->enum( 'status',
+            ['Not Available', 'Available'])->default('Available');
             $table->timestamps();
-            
         });
     }
 
