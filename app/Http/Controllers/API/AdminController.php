@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Carbon;
 use App\Http\Controllers\Controller;
+use App\Notifications\ReviewDoctorRequestNotification;
 
 class AdminController extends Controller
 {
@@ -16,27 +17,27 @@ class AdminController extends Controller
     {
         // تحقق إذا تم تحديد حالة معينة لتصفية الطلبات
         $status = $request->query('status'); // يتم قراءة الحالة من بارامتر الكويري (query string)
-    
+
         if ($status) {
             // التحقق من أن الحالة صحيحة
             if (!in_array($status, ['pending', 'approved', 'rejected'])) {
                 return response()->json(['message' => 'Invalid status'], 400);
             }
-    
+
             // جلب الطلبات بناءً على الحالة المحددة
             $requests = DoctorRequest::where('status', $status)->get();
         } else {
             // جلب جميع الطلبات بدون تصفية
             $requests = DoctorRequest::all();
         }
-    
+
         return response()->json($requests);
     }
-    
+
     public function approveDoctorRequest($id)
     {
         $request = DoctorRequest::findOrFail($id);
-
+        $doctor = null;
         if ($request->status === 'pending') {
             $user = User::create([
                 'username' => strtolower($request->first_name . $request->last_name),
@@ -45,19 +46,24 @@ class AdminController extends Controller
                 'role' => 'doctor',
             ]);
 
-            Doctor::create([
+            $doctor = Doctor::create([
                 'user_id' => $user->id,
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
                 'license_number' => $request->license_number,
                 'major' => $request->major,
-                'phone_number'=>$request->phone_number,
+                'phone_number' => $request->phone_number,
                 'country' => $request->country,
                 'image' => $request->image,
             ]);
 
             // تحديث حالة الطلب
             $request->update(['status' => 'approved']);
+
+            // send notification to doctor
+            $status = 'accepted'; // or 'rejected'
+            $doctor->notify(new ReviewDoctorRequestNotification($status));
+            
             return response()->json(['message' => 'Doctor approved successfully!']);
         }
 
@@ -77,7 +83,7 @@ class AdminController extends Controller
     }
 
 
-    
+
     /**
      * Display a listing of the resource.
      */
