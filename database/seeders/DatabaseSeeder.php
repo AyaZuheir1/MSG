@@ -13,10 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([
-        //     AdminSeeder::class, // استدعاء السيدر الخاص بالأدمن
-        // ]);
         $this->call([
+            AdminSeeder::class, // استدعاء السيدر الخاص بالأدمن
             DoctorSeeder::class, 
         ]);
     }

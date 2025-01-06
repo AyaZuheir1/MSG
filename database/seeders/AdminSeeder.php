@@ -16,7 +16,7 @@ class AdminSeeder extends Seeder
     {
         User::create([
             'username' => 'admin',
-            'email' => 'admin@example.com',
+            'email' => 'admin2@example.com',
             'password' => Hash::make('password123'), // يجب أن تشفري كلمة المرور
             'role' => 'admin', // حقل الدور، تأكدي أن لديك حقل role في جدول users
         ]);

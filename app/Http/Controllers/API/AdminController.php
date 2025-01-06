@@ -10,6 +10,7 @@ use App\Models\DoctorRequest;
 use Illuminate\Support\Carbon;
 use App\Http\Controllers\Controller;
 use App\Notifications\ReviewDoctorRequestNotification;
+use Google\Cloud\Storage\Connection\Rest;
 
 class AdminController extends Controller
 {
@@ -63,7 +64,7 @@ class AdminController extends Controller
             // send notification to doctor
             $status = 'accepted'; // or 'rejected'
             $doctor->notify(new ReviewDoctorRequestNotification($status));
-            
+
             return response()->json(['message' => 'Doctor approved successfully!']);
         }
 

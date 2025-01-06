@@ -38,4 +38,9 @@ class Doctor extends Model
     {
         return $this->hasMany(Review::class, 'doc_id');
     }
+    public function routeNotificationForFcm()
+    {
+        // Return the FCM token of the user
+        return $this->fcm_token;
+    }
 }

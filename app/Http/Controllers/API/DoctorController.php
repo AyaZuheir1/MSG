@@ -27,6 +27,7 @@ class DoctorController extends Controller
         'email' => 'required|email|unique:users',
         'license_number' => 'required|string|unique:doctor_requests',
         'major' => 'required|string|max:255',
+        'phone_number' => 'required',
         'country' => 'required|string',
         'image' => 'nullable|string',
 
@@ -50,6 +51,7 @@ class DoctorController extends Controller
         'major' => $validatedData['major'],
         'country' => $validatedData['country'],
         'status' => 'pending', 
+        'phone_number' => $validatedData['phone_number'],
         'image' => $imageName, 
 
     ]);

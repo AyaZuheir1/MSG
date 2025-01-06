@@ -42,21 +42,32 @@ class ReviewDoctorRequestNotification extends Notification
      */
     public function toFcm($notifiable)
     {
-        $deviceToken = $notifiable->fcm_token; // Ensure the `fcm_token` is available in the notifiable model
+        return ['fcm'];
+        // $deviceToken = $notifiable->fcm_token; // Ensure the `fcm_token` is available in the notifiable model
 
-        if (!$deviceToken) {
-            return;
-        }
+        // if (!$deviceToken) {
+        //     return;
+        // }
+        // return FcmMessage::create()
+        // ->setData([
+        //     'key' => 'value', // Custom data
+        // ])
+        // ->setNotification([
+        //     'title' => 'Your Notification Title',
+        //     'body' => 'Your Notification Body',
+        //     // 'image' => 'https://example.com/image.png', // Optional
+        // ]);
 
-        $messaging = Firebase::messaging();
 
-        $message = CloudMessage::withTarget('token', $deviceToken)
-            ->withNotification([
-                'title' => 'Registration Status',
-                'body'  => $this->message,
-            ]);
+        // $messaging = Firebase::messaging();
 
-        $messaging->send($message);
+        // $message = CloudMessage::withTarget('token', $deviceToken)
+        //     ->withNotification([
+        //         'title' => 'Registration Status',
+        //         'body'  => $this->message,
+        //     ]);
+
+        // $messaging->send($message);
 
         // $message = new CloudMessage;
         // $message->setNotification(new Notification('title',"Acepted $notifiable->id"));
