@@ -15,8 +15,8 @@ class DoctorSeeder extends Seeder
     public function run(): void
     {
         User::create([
-            'username' => 'doctor',
-            'email' => 'doctor@example.com',
+            'username' => 'doctor2',
+            'email' => 'doctor2@example.com',
             'password' => Hash::make('password123'), // يجب أن تشفري كلمة المرور
             'role' => 'doctor', // حقل الدور، تأكدي أن لديك حقل role في جدول users
         ]);

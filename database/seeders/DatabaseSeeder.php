@@ -15,8 +15,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdminSeeder::class, // استدعاء السيدر الخاص بالأدمن
-        ]);
-        $this->call([
             DoctorSeeder::class, 
         ]);
     }

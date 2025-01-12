@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Doctor extends Model
 {
-    use HasFactory , HasApiTokens;
+    use HasFactory ,HasApiTokens ,Notifiable;
 
     protected $fillable = [
         'user_id',
@@ -20,6 +21,7 @@ class Doctor extends Model
         'phone_number',
         'bio',
         'image',
+        'fcm_token',
     ];
 
     public function appointments()
@@ -35,5 +37,10 @@ class Doctor extends Model
     public function reviews()
     {
         return $this->hasMany(Review::class, 'doc_id');
+    }
+    public function routeNotificationForFcm()
+    {
+        // Return the FCM token of the user
+        return $this->fcm_token;
     }
 }
