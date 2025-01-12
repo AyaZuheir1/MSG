@@ -29,6 +29,7 @@ class DoctorController extends Controller
         'major' => 'required|string|max:255',
         'country' => 'required|string',
         'image' => 'nullable|string',
+        'phone_number'=>'required|string',
 
         // 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
 
@@ -51,6 +52,7 @@ class DoctorController extends Controller
         'country' => $validatedData['country'],
         'status' => 'pending', 
         'image' => $imageName, 
+        'phone_number'=>$validatedData['phone_number'],
 
     ]);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Article;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +30,7 @@ class ArticleController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'summary' => 'required|string|max:500',
+            'summary' => 'nullable|string|max:500',
             'content' => 'required|string',
             'image' => 'nullable|string',
         ]);
@@ -38,6 +39,9 @@ class ArticleController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $validated['admin_id'] = auth::user()->admin->id;
+        if (empty($validated['summary'])) {
+            $validated['summary'] = Str::words($validated['content'], 20, '...'); // 20 كلمة كملخص
+        }
 
         $article = Article::create($validated);
 
