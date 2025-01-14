@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->enum('role', ['admin', 'doctor', 'patient'])->default('Patient');
+            $table->integer('otp_code')->nullable(); 
+            $table->timestamp('otp_expires_at')->nullable();
             $table->timestamps();
         });
 

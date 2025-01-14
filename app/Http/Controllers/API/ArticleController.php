@@ -30,25 +30,29 @@ class ArticleController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'summary' => 'nullable|string|max:500',
+            'summary' => 'required|string|max:500',
             'content' => 'required|string',
             'image' => 'nullable|string',
+            'published_at' => 'nullable|date_format:Y-m-d H:i:s'
         ]);
         if (auth::user()->role !== 'admin') {
-
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $validated['admin_id'] = auth::user()->admin->id;
-        if (empty($validated['summary'])) {
-            $validated['summary'] = Str::words($validated['content'], 20, '...'); // 20 كلمة كملخص
-        }
 
+        if (empty($validated['summary'])) {
+            $validated['summary'] = Str::words($validated['content'], 20, '...');
+        }
+        if (empty($validated['published_at'])) {
+            $validated['published_at'] = now();  
+        }
         $article = Article::create($validated);
 
         return response()->json([
             'message' => 'Article added successfully!',
             'article' => $article
         ]);
+     
     }
 
     /**

@@ -17,15 +17,17 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('major');
-            $table->string('license_number');
             $table->string('country');
             $table->string('phone_number');
-            $table->text('bio')->nullable();
             $table->string('image')->nullable();
+            $table->string('certificate');  
+            $table->enum('gender', ['male', 'female']);
             $table->timestamps();
         });
     }
-
+   
+   
+   
     /**
      * Reverse the migrations.
      */

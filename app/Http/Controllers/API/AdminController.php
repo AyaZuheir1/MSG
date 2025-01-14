@@ -8,9 +8,11 @@ use App\Models\Article;
 use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Notifications\ReviewDoctorRequestNotification;
 use Google\Cloud\Storage\Connection\Rest;
+use App\Notifications\ReviewDoctorRequestNotification;
+
 
 class AdminController extends Controller
 {
@@ -35,41 +37,52 @@ class AdminController extends Controller
         return response()->json($requests);
     }
 
+
     public function approveDoctorRequest($id)
     {
         $request = DoctorRequest::findOrFail($id);
-        $doctor = null;
+
         if ($request->status === 'pending') {
-            $user = User::create([
-                'username' => strtolower($request->first_name . $request->last_name),
-                'email' => $request->email,
-                'password' => bcrypt('defaultpassword'),
-                'role' => 'doctor',
-            ]);
+            DB::beginTransaction();
 
-            $doctor = Doctor::create([
-                'user_id' => $user->id,
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'license_number' => $request->license_number,
-                'major' => $request->major,
-                'phone_number' => $request->phone_number,
-                'country' => $request->country,
-                'image' => $request->image,
-            ]);
+            try {
 
-            // تحديث حالة الطلب
-            $request->update(['status' => 'approved']);
+                $user = User::create([
+                    'username' => strtolower($request->first_name . $request->last_name),
+                    'email' => $request->email,
+                    'password' => $request->password,
+                    'role' => 'doctor',
+                ]);
+                $doctor = Doctor::create([
+                    'user_id' => $user->id,
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'major' => $request->major,
+                    'phone_number' => $request->phone_number,
+                    'country' => $request->country,
+                    'certificate' => $request->certificate,
+                    'gender' => $request->gender,
+                ]);
 
-            // send notification to doctor
-            $status = 'accepted'; // or 'rejected'
-            $doctor->notify(new ReviewDoctorRequestNotification($status));
+                $doctor->save();
 
-            return response()->json(['message' => 'Doctor approved successfully!']);
+                $request->update(['status' => 'approved']);
+
+                $status = 'accepted'; // أو 'rejected'
+                // $doctor->notify(new ReviewDoctorRequestNotification($status));
+
+                DB::commit();
+
+                return response()->json(['message' => 'Doctor approved successfully!']);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json(['message' => 'An error occurred while approving the doctor request.', 'error' => $e->getMessage()], 500);
+            }
         }
 
         return response()->json(['message' => 'Request already processed!'], 400);
     }
+
 
     public function rejectDoctorRequest($id)
     {

@@ -12,12 +12,14 @@ class DoctorRequest extends Model
         'first_name',
         'last_name',
         'email',
-        'license_number',
-        'major',
+        'password',
         'country',
-        'status',
         'phone_number',
-        'image',
+        'major',
+        'certificate',
+        'status',
+        'gender',
+
     ];
 
 

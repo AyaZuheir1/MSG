@@ -25,7 +25,7 @@ class PatientController extends Controller
 
     public function profile(Request $request)
     {
-        $patient = $request->user()->patient; // جلب بيانات المريض المرتبطة بالمستخدم
+        $patient = $request->user()->patient; 
         return response()->json($patient);
     }
     public function register(Request $request)
@@ -89,10 +89,8 @@ class PatientController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        // إنشاء Token للمريض
         $token = $user->createToken('patient-auth-token')->plainTextToken;
 
-        // إرجاع البيانات مع الـ Token
         return response()->json([
             'message' => 'Login successful.',
             'token' => $token,
@@ -103,7 +101,6 @@ class PatientController extends Controller
 
     public function updateProfile(Request $request)
     {
-        // التحقق من البيانات المدخلة
         $validated = $request->validate([
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
@@ -121,9 +118,6 @@ class PatientController extends Controller
         }
         $patient->update($validated);
 
-        
-
-
 
         return response()->json([
             'message' => 'Profile updated successfully.',
@@ -140,7 +134,7 @@ class PatientController extends Controller
         }
 
         $validatedData = $request->validate([
-            'rate' => 'required|integer|min:1|max:5', // التقييم بين 1 و 5
+            'rate' => 'required|integer|min:1|max:5', 
             'feedback' => 'nullable|string',
         ]);
 

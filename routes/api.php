@@ -8,6 +8,7 @@ use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\PatientController;
+use Illuminate\Support\Facades\Mail;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -48,11 +49,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/doctor/schedule', [DoctorController::class, 'addSchedule']);
     Route::get('/doctor/appointments', [DoctorController::class, 'myAppointments']);
     Route::delete('/doctor/appointment/{id}', [DoctorController::class, 'deleteAppointment']);
+    Route::post('/doctor/updateDoctor', [DoctorController::class, 'updateDoctor']);
 
     //admin route
     Route::put('/admin/approve-doctor/{id}', [AdminController::class, 'approveDoctorRequest']);
     Route::put('/admin/reject-doctor/{id}', [AdminController::class, 'rejectDoctorRequest']);
     Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);
-
+    
 });
+
+
+
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/resendOtp', [AuthController::class, 'resendOtp']);
 

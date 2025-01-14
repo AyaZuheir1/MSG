@@ -16,11 +16,11 @@ class Doctor extends Model
         'first_name',
         'last_name',
         'major',
-        'license_number',
         'country',
         'phone_number',
-        'bio',
         'image',
+        'certificate',
+        'gender',
         'fcm_token',
     ];
 

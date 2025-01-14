@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\User;
+use App\Models\Doctor;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\Middleware;
 
 class DoctorController extends Controller
@@ -20,74 +23,98 @@ class DoctorController extends Controller
         ];
     }
     public function register(Request $request)
+    {
+        $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'password' => 'required|string|min:8|confirmed',
+            'country' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:20',
+            'gender' => 'required|in:male,female',
+            'major' => 'required|string|max:255',
+            'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg', 
+        ]);
+    
+        DB::beginTransaction();
+        try {
+            $existingRequest = DoctorRequest::where('email', $validatedData['email'])->first();
+    
+            if ($existingRequest && $existingRequest->status === 'rejected') {
+                $existingRequest->delete(); 
+            }
+    
+            if ($request->hasFile('certificate')) {
+                $certificate = $request->file('certificate');
+                $certificateName = time() . '.' . $certificate->getClientOriginalExtension();
+                $certificate->storeAs('public/certificates', $certificateName);
+            } else {
+                $certificateName = null;
+            }
+    
+            // إنشاء الطلب الجديد
+            DoctorRequest::create([
+                'first_name' => $validatedData['first_name'],
+                'last_name' => $validatedData['last_name'],
+                'email' => $validatedData['email'],
+                'password' => Hash::make($validatedData['password']),
+                'country' => $validatedData['country'],
+                'phone_number' => $validatedData['phone_number'],
+                'gender' => $validatedData['gender'],
+                'major' => $validatedData['major'],
+                'certificate' => $certificateName,
+                'status' => 'pending',
+            ]);
+    
+            DB::commit();
+    
+            return response()->json(['message' => 'Registration request submitted successfully!'], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'An error occurred. Please try again later.'], 500);
+        }
+    }
+    public function updateDoctor(Request $request)
 {
     $validatedData = $request->validate([
-        'first_name' => 'required|string|max:255',
-        'last_name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users',
-        'license_number' => 'required|string|unique:doctor_requests',
-        'major' => 'required|string|max:255',
-        'phone_number' => 'required',
-        'country' => 'required|string',
-        'image' => 'nullable|string',
-        'phone_number'=>'required|string',
-
-        // 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-
+        'first_name' => 'nullable|string|max:255',
+        'last_name' => 'nullable|string|max:255',
+        'major' => 'nullable|string|max:255',
+        'country' => 'nullable|string|max:255',
+        'phone_number' => 'nullable|string|max:20',
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
+        'gender' => 'nullable|in:male,female',
     ]);
+
+    $doctor = Doctor::where('user_id', Auth::id())->first();
+
     if ($request->hasFile('image')) {
         $image = $request->file('image');
-        $imageName = time() . '.' . $image->getClientOriginalExtension();
-        $image->storeAs('public/image', $imageName);
-    } else {
-        $imageName = null; // إذا لم يتم تحميل صورة
+        $imageName = time() . '_image.' . $image->getClientOriginalExtension();
+        $image->storeAs('public/doctors/images', $imageName);
+        $validatedData['image'] = $imageName;
+
+        if ($doctor->image) {
+            Storage::delete('public/doctors/images/' . $doctor->image);
+        }
     }
 
-    // حفظ الطلب في جدول doctor_requests
-    DoctorRequest::create([
-        'first_name' => $validatedData['first_name'],
-        'last_name' => $validatedData['last_name'],
-        'email' => $validatedData['email'],
-        'license_number' => $validatedData['license_number'],
-        'major' => $validatedData['major'],
-        'country' => $validatedData['country'],
-        'status' => 'pending', 
-        'phone_number' => $validatedData['phone_number'],
-        'image' => $imageName, 
-        'phone_number'=>$validatedData['phone_number'],
+    if ($request->hasFile('certificate')) {
+        $certificate = $request->file('certificate');
+        $certificateName = time() . '_certificate.' . $certificate->getClientOriginalExtension();
+        $certificate->storeAs('public/doctors/certificates', $certificateName);
+        $validatedData['certificate'] = $certificateName;
 
-    ]);
+        if ($doctor->certificate) {
+            Storage::delete('public/doctors/certificates/' . $doctor->certificate);
+        }
+    }
 
-    return response()->json(['message' => 'Registration request submitted successfully!'], 201);
+    $doctor->update($validatedData);
+
+    return response()->json(['message' => 'Doctor updated successfully!', 'doctor' => $doctor], 200);
 }
-
-// public function login(Request $request)
-// {
-//     $validatedData = $request->validate([
-//         'email' => 'required|email',
-//         'password' => 'required',
-//     ]);
-
-//     $user = User::where('email', $validatedData['email'])->first();
-
-//     if (!$user || !Hash::check($validatedData['password'], $user->password)) {
-//         return response()->json(['message' => 'Invalid credentials'], 401);
-//     }
-
-//     // التحقق من دور المستخدم
-//     if ($user->role !== 'doctor') {
-//         return response()->json(['message' => 'Access denied. Only doctors can login here.'], 403);
-//     }
-
-//     // إنشاء توكن جديد
-//     $token = $user->createToken('doctor-token')->plainTextToken;
-
-//     return response()->json([
-//         'message' => 'Login successful',
-//         'token' => $token,
-//         'user' => $user,
-//     ]);
-// }
 
 public function login(Request $request)
 {
@@ -96,15 +123,12 @@ public function login(Request $request)
         'password' => 'required|min:6',
     ]);
 
-    // البحث عن المستخدم بناءً على الإيميل
     $user = User::where('email', $validatedData['email'])->first();
 
-    // إذا المستخدم غير موجود أو كلمة المرور خاطئة
     if (!$user || !Hash::check($validatedData['password'], $user->password)) {
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
 
-    // إنشاء توكن مؤقت
     $token = $user->createToken('api_token')->plainTextToken;
 
     return response()->json([
@@ -114,9 +138,7 @@ public function login(Request $request)
     ]);
 }
 
-/**
-     * إضافة موعد جديد
-     */
+/**     */
     public function addSchedule(Request $request)
     {
         $validated = $request->validate([
@@ -126,9 +148,9 @@ public function login(Request $request)
             'end_time' => 'required|date_format:H:i|after:start_time',
         ]);
         
-        $validated['doctor_id'] = Auth::user()->doctor->id; // ربط الموعد بالطبيب
+        $validated['doctor_id'] = Auth::user()->doctor->id; 
 
-        $validated['status'] = 'Available'; // الموعد متاح افتراضيًا
+        $validated['status'] = 'Available'; 
 
         $appointment = Appointment::create($validated);
 
@@ -139,7 +161,6 @@ public function login(Request $request)
     }
 
     /**
-     * عرض مواعيد الطبيب
      */
     public function myAppointments()
     {
@@ -194,7 +215,7 @@ public function login(Request $request)
      */
     public function update(Request $request, string $id)
     {
-        //
+        
     }
 
     /**
