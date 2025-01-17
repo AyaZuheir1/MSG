@@ -44,7 +44,7 @@ class ArticleController extends Controller
             $validated['summary'] = Str::words($validated['content'], 20, '...');
         }
         if (empty($validated['published_at'])) {
-            $validated['published_at'] = now();  
+            $validated['published_at'] = now();
         }
         $article = Article::create($validated);
 
@@ -52,13 +52,11 @@ class ArticleController extends Controller
             'message' => 'Article added successfully!',
             'article' => $article
         ]);
-     
     }
 
     /**
      * Display the specified resource.
      */
-    //البحث عن مقال
     public function show(string $id)
     {
         $article = Article::findOrFail($id);
@@ -71,41 +69,40 @@ class ArticleController extends Controller
     public function update(Request $request, string $id)
     {
         $article = Article::findOrFail($id);
-    
+
         if (auth::user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-    
+
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'summary' => 'sometimes|required|string|max:500',
             'content' => 'sometimes|required|string',
             'image' => 'nullable|string',
         ]);
-    
+
         $article->update($validated);
-    
+
         return response()->json([
             'message' => 'Article updated successfully!',
             'article' => $article,
         ]);
     }
-    
 
-    
+
+
     public function destroy(string $id)
-{
-    $article = Article::findOrFail($id);
+    {
+        $article = Article::findOrFail($id);
 
-    if (auth::user()->role !== 'admin') {
-        return response()->json(['message' => 'Unauthorized'], 403);
+        if (auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $article->delete();
+
+        return response()->json([
+            'message' => 'Article deleted successfully!',
+        ]);
     }
-
-    $article->delete();
-
-    return response()->json([
-        'message' => 'Article deleted successfully!',
-    ]);
-}
-
 }

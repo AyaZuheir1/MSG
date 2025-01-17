@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('major');
             $table->string('country');
             $table->string('phone_number');
+            $table->decimal('average_rating')->default(0); 
             $table->string('image')->nullable();
             $table->string('certificate');  
             $table->enum('gender', ['male', 'female']);

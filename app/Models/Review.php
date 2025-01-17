@@ -15,7 +15,7 @@ class Review extends Model
         'rate',
         'feedback',
     ];
-
+    
     public function doctor()
     {
         return $this->belongsTo(Doctor::class, 'doc_id');

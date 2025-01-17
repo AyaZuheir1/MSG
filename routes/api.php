@@ -10,30 +10,22 @@ use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\PatientController;
 use Illuminate\Support\Facades\Mail;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-// Route::post('register',[PatientController::class,'register']); //How to differ from doctor register route ??
-Route::post('/doctor/register', [DoctorController::class, 'register']);
-Route::post('/patient/login', [AuthController::class, 'login']);
+// Route::get('/user', function (Request $request) {
+//     return $request->user();
+// })->middleware('auth:sanctum');
 // Route::apiResource('patient',PatientController::class);
 // Route::apiResource('doctor',PatientController::class);
 
 // Route::get('reviews',[DoctorController::class,'reviews'])->name('doctor.reviews') ->middleware('Auth:sanctum');
 // Route::get('rate',[PatientController::class,'rate'])->name('patient.rating')->middleware('Auth:sanctum');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/patient/register', [PatientController::class, 'register']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
+
     Route::apiResource('articles', ArticleController::class);
-});
-Route::post('/doctor/register', [DoctorController::class, 'register']);
+    Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
 
-
-Route::middleware(['auth:sanctum'])->group(function () {
     //patient route
-    // Route::post('/patient/login', [PatientController::class, 'login']);
-    Route::put('/patient/update-profile', [PatientController::class, 'updateProfile']);
+    Route::put('/patient/update-profile', [PatientController::class, 'update']);
     Route::post('/doctors/{doctorId}/rate', [PatientController::class, 'rateDoctor']);
     Route::post('/service/rate', [PatientController::class, 'rateService']);
     //patient appointment route
@@ -43,7 +35,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('cancel-appointment/{id}', [PatientController::class, 'cancelAppointment']);
 
     //doctor route
-    // Route::post('/doctor/login', [DoctorController::class, 'login']);
+    Route::put('/doctor/update-profile', [DoctorController::class, 'update']);
 
     //doctor appointment route
     Route::post('/doctor/schedule', [DoctorController::class, 'addSchedule']);
@@ -54,12 +46,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     //admin route
     Route::put('/admin/approve-doctor/{id}', [AdminController::class, 'approveDoctorRequest']);
     Route::put('/admin/reject-doctor/{id}', [AdminController::class, 'rejectDoctorRequest']);
-    Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);
-    
+    Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);   
+    Route::post('/logout', [AuthController::class, 'logout']);
+
 });
 
 
-
+Route::post('/patient/register', [PatientController::class, 'register']);
+Route::post('/doctor/register', [DoctorController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);

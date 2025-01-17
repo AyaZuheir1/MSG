@@ -17,6 +17,7 @@ class Doctor extends Model
         'last_name',
         'major',
         'country',
+        'average_rating',
         'phone_number',
         'image',
         'certificate',
@@ -43,4 +44,5 @@ class Doctor extends Model
         // Return the FCM token of the user
         return $this->fcm_token;
     }
+   
 }

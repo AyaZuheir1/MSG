@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('patient_id')->nullable()->constrained('patients')->onDelete('cascade');
             $table->foreignId('doctor_id')->constrained('doctors')->onDelete('cascade');
             $table->date('date');
-            $table->string('period'); // صباحية أو مسائية
+            $table->string('period'); 
             $table->time('start_time');
             $table->time('end_time');
             $table->enum( 'status',

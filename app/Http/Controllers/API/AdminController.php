@@ -4,10 +4,8 @@ namespace App\Http\Controllers\API;
 
 use App\Models\User;
 use App\Models\Doctor;
-use App\Models\Article;
 use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Google\Cloud\Storage\Connection\Rest;
@@ -18,19 +16,15 @@ class AdminController extends Controller
 {
     public function getDoctorRequests(Request $request)
     {
-        // تحقق إذا تم تحديد حالة معينة لتصفية الطلبات
-        $status = $request->query('status'); // يتم قراءة الحالة من بارامتر الكويري (query string)
+        $status = $request->query('status'); 
 
         if ($status) {
-            // التحقق من أن الحالة صحيحة
             if (!in_array($status, ['pending', 'approved', 'rejected'])) {
                 return response()->json(['message' => 'Invalid status'], 400);
             }
 
-            // جلب الطلبات بناءً على الحالة المحددة
             $requests = DoctorRequest::where('status', $status)->get();
         } else {
-            // جلب جميع الطلبات بدون تصفية
             $requests = DoctorRequest::all();
         }
 
@@ -68,7 +62,7 @@ class AdminController extends Controller
 
                 $request->update(['status' => 'approved']);
 
-                $status = 'accepted'; // أو 'rejected'
+                $status = 'accepted'; 
                 // $doctor->notify(new ReviewDoctorRequestNotification($status));
 
                 DB::commit();

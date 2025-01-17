@@ -22,6 +22,11 @@ class DoctorController extends Controller
             new Middleware('auth:sanctum', except:['register'])
         ];
     }
+    public function profile(Request $request)
+    {
+        $doctor = $request->user()->doctor; 
+        return response()->json($doctor);
+    }
     public function register(Request $request)
     {
         $validatedData = $request->validate([
@@ -33,7 +38,7 @@ class DoctorController extends Controller
             'phone_number' => 'required|string|max:20',
             'gender' => 'required|in:male,female',
             'major' => 'required|string|max:255',
-            'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg', 
+            'certificate' => 'required|file|mimes:pdf,jpeg,png,jpg', 
         ]);
     
         DB::beginTransaction();
@@ -47,12 +52,11 @@ class DoctorController extends Controller
             if ($request->hasFile('certificate')) {
                 $certificate = $request->file('certificate');
                 $certificateName = time() . '.' . $certificate->getClientOriginalExtension();
-                $certificate->storeAs('public/certificates', $certificateName);
+                $certificate->storeAs('public/doctors/certificates', $certificateName);
             } else {
                 $certificateName = null;
             }
     
-            // إنشاء الطلب الجديد
             DoctorRequest::create([
                 'first_name' => $validatedData['first_name'],
                 'last_name' => $validatedData['last_name'],
@@ -74,69 +78,29 @@ class DoctorController extends Controller
             return response()->json(['message' => 'An error occurred. Please try again later.'], 500);
         }
     }
-    public function updateDoctor(Request $request)
-{
-    $validatedData = $request->validate([
-        'first_name' => 'nullable|string|max:255',
-        'last_name' => 'nullable|string|max:255',
-        'major' => 'nullable|string|max:255',
-        'country' => 'nullable|string|max:255',
-        'phone_number' => 'nullable|string|max:20',
-        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
-        'gender' => 'nullable|in:male,female',
-    ]);
+ 
 
-    $doctor = Doctor::where('user_id', Auth::id())->first();
+// public function login(Request $request)
+// {
+//     $validatedData = $request->validate([
+//         'email' => 'required|email',
+//         'password' => 'required|min:6',
+//     ]);
 
-    if ($request->hasFile('image')) {
-        $image = $request->file('image');
-        $imageName = time() . '_image.' . $image->getClientOriginalExtension();
-        $image->storeAs('public/doctors/images', $imageName);
-        $validatedData['image'] = $imageName;
+//     $user = User::where('email', $validatedData['email'])->first();
 
-        if ($doctor->image) {
-            Storage::delete('public/doctors/images/' . $doctor->image);
-        }
-    }
+//     if (!$user || !Hash::check($validatedData['password'], $user->password)) {
+//         return response()->json(['message' => 'Invalid credentials'], 401);
+//     }
 
-    if ($request->hasFile('certificate')) {
-        $certificate = $request->file('certificate');
-        $certificateName = time() . '_certificate.' . $certificate->getClientOriginalExtension();
-        $certificate->storeAs('public/doctors/certificates', $certificateName);
-        $validatedData['certificate'] = $certificateName;
+//     $token = $user->createToken('api_token')->plainTextToken;
 
-        if ($doctor->certificate) {
-            Storage::delete('public/doctors/certificates/' . $doctor->certificate);
-        }
-    }
-
-    $doctor->update($validatedData);
-
-    return response()->json(['message' => 'Doctor updated successfully!', 'doctor' => $doctor], 200);
-}
-
-public function login(Request $request)
-{
-    $validatedData = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required|min:6',
-    ]);
-
-    $user = User::where('email', $validatedData['email'])->first();
-
-    if (!$user || !Hash::check($validatedData['password'], $user->password)) {
-        return response()->json(['message' => 'Invalid credentials'], 401);
-    }
-
-    $token = $user->createToken('api_token')->plainTextToken;
-
-    return response()->json([
-        'message' => 'Login successful',
-        'token' => $token,
-        'user' => $user,
-    ]);
-}
+//     return response()->json([
+//         'message' => 'Login successful',
+//         'token' => $token,
+//         'user' => $user,
+//     ]);
+// }
 
 /**     */
     public function addSchedule(Request $request)
@@ -164,7 +128,7 @@ public function login(Request $request)
      */
     public function myAppointments()
     {
-        $doctorId = auth::user()->doctor->id; // جلب الطبيب المرتبط بالمستخدم
+        $doctorId = auth::user()->doctor->id; 
 
         $appointments = Appointment::where('doctor_id', $doctorId)->get();
 
@@ -172,7 +136,7 @@ public function login(Request $request)
     }
 
     /**
-     * حذف موعد متاح
+     * 
      */
     public function deleteAppointment($id)
     {
@@ -191,7 +155,8 @@ public function login(Request $request)
      */
     public function index()
     {
-        //
+        $doctors = Doctor::all(); 
+        return response()->json($doctors);
     }
 
     /**
@@ -207,7 +172,12 @@ public function login(Request $request)
      */
     public function show(string $id)
     {
-        //
+        $doctor = Doctor::find($id); 
+        if (!$doctor) {
+            return response()->json(['message' => 'Doctor not found'], 404);
+        }
+        return response()->json($doctor);
+    
     }
 
     /**
@@ -215,8 +185,68 @@ public function login(Request $request)
      */
     public function update(Request $request, string $id)
     {
-        
+        $validatedData = $request->validate([
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'major' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
+            'gender' => 'nullable|in:male,female',
+        ]);
+    
+        $doctor = Doctor::where('user_id', Auth::id())->first();
+    
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '_image.' . $image->getClientOriginalExtension();
+            $image->storeAs('public/doctors/images', $imageName);
+            $validatedData['image'] = $imageName;
+    
+            if ($doctor->image) {
+                Storage::delete('public/doctors/images/' . $doctor->image);
+            }
+        }
+    
+        if ($request->hasFile('certificate')) {
+            $certificate = $request->file('certificate');
+            $certificateName = time() . '_certificate.' . $certificate->getClientOriginalExtension();
+            $certificate->storeAs('public/doctors/certificates', $certificateName);
+            $validatedData['certificate'] = $certificateName;
+    
+            if ($doctor->certificate) {
+                Storage::delete('public/doctors/certificates/' . $doctor->certificate);
+            }
+        }
+    
+        $doctor->update($validatedData);
+    
+        return response()->json(['message' => 'Doctor updated successfully!', 'doctor' => $doctor], 200); 
     }
+
+    public function searchDoctors(Request $request)
+{
+    $validatedData = $request->validate([
+        'name' => 'nullable|string',
+        'specialization' => 'nullable|string', 
+    ]);
+
+    $query = Doctor::query();
+
+    if (!empty($validatedData['name'])) {
+        $query->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $validatedData['name'] . '%']);
+    }
+
+    // البحث حسب التخصص
+    if (!empty($validatedData['major'])) {
+        $query->where('major', 'LIKE', '%' . $validatedData['major'] . '%');
+    }
+
+    $doctors = $query->get();
+
+    return response()->json($doctors);
+}
 
     /**
      * Remove the specified resource from storage.
