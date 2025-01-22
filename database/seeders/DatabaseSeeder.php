@@ -21,9 +21,9 @@ class DatabaseSeeder extends Seeder
         //     DoctorSeeder::class, 
         // ]);
 
-        User::factory(10)->create(); // إنشاء مستخدمين
-        Doctor::factory(5)->create(); // إنشاء أطباء
-        Patient::factory(5)->create(); // إنشاء مرضى
-        Appointment::factory(20)->create(); 
+        // User::factory(10)->create(); // إنشاء مستخدمين
+        // Doctor::factory(5)->create(); // إنشاء أطباء
+        // Patient::factory(5)->create(); // إنشاء مرضى
+        // Appointment::factory(20)->create(); 
     }
 }
