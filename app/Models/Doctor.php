@@ -24,6 +24,11 @@ class Doctor extends Model
         'gender',
         'fcm_token',
     ];
+    public function doctor()
+{
+    return $this->hasOne(Doctor::class);
+}
+
 
     public function appointments()
     {

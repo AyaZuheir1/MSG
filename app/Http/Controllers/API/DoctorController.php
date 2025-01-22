@@ -140,15 +140,24 @@ class DoctorController extends Controller
      */
     public function deleteAppointment($id)
     {
-        $appointment = Appointment::findOrFail($id);
+       
+            $appointment = Appointment::findOrFail($id);
+        
+            // تحقق من أن المستخدم الحالي لديه دور "Doctor"
+            if (auth::user()->role !== 'doctor') {
+                return response()->json(['message' => 'Unauthorized. User is not a doctor.'], 403);
+            }
 
-        if ($appointment->doctor_id !== auth::user()->doctor->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $appointment->delete();
-
-        return response()->json(['message' => 'Appointment deleted successfully!']);
+            if ($appointment->doctor_id !== auth::user()->doctor->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+            
+            // حذف الموعد
+            $appointment->delete();
+        
+            return response()->json(['message' => 'Appointment deleted successfully!']);
+        
+        
     }
     /**
      * Display a listing of the resource.
