@@ -10,6 +10,20 @@ use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
+    public function selectRole(Request $request)
+    {
+        $validatedData = $request->validate([
+            'role' => 'required|in:doctor,patient',
+        ]);
+
+        $redirectPage = $validatedData['role'] === 'doctor' ? '/doctor/splash' : '/patient/splash';
+
+        return response()->json([
+            'message' => 'Role selected successfully!',
+            'role' => $validatedData['role'],
+            'redirect_to' => $redirectPage,
+        ]);
+    }
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -17,7 +31,7 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
         $user = User::where('email', $request->email)->first();
-        
+
         if ($user && Hash::check($request->password, $user->password)) {
             Auth::login($user);
             $token = $user->createToken($user->username)->plainTextToken;

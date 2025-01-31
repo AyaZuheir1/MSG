@@ -40,17 +40,17 @@ class PatientController extends Controller
             'phone_number' => 'required|string|max:15',
             'address' => 'required|string|max:255',
         ]);
-    
+
         try {
             DB::beginTransaction();
-    
+
             $user = User::create([
                 'username' => "{$validatedData['first_name']} {$validatedData['last_name']}",
                 'email' => $validatedData['email'],
                 'password' => Hash::make($validatedData['password']),
                 'role' => 'patient',
             ]);
-    
+
             $patient = Patient::create([
                 'user_id' => $user->id,
                 'first_name' => $validatedData['first_name'],
@@ -60,47 +60,22 @@ class PatientController extends Controller
                 'phone_number' => $validatedData['phone_number'],
                 'address' => $validatedData['address'],
             ]);
-    
+
             $token = $user->createToken('AuthToken')->plainTextToken;
-    
+
             DB::commit();
-    
+
             return response()->json([
                 'message' => 'Account created successfully.',
                 'user' => $user,
                 'patient' => $patient,
                 'token' => $token,
             ], 201);
-    
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'Failed to create account.'], 500);
         }
     }
-    
-
-
-    // public function login(Request $request)
-    // {
-    //     $request->validate([
-    //         'email' => 'required|email',
-    //         'password' => 'required|string',
-    //     ]);
-
-    //     $user = User::where('email', $request->email)->where('role', 'patient')->first();
-
-    //     if (!$user || !Hash::check($request->password, $user->password)) {
-    //         return response()->json(['message' => 'Invalid credentials'], 401);
-    //     }
-
-    //     $token = $user->createToken('patient-auth-token')->plainTextToken;
-
-    //     return response()->json([
-    //         'message' => 'Login successful.',
-    //         'token' => $token,
-    //         'user' => $user,
-    //     ], 200);
-    // }
 
 
     private function updateDoctorAverageRating($doctor_id)
@@ -164,6 +139,10 @@ class PatientController extends Controller
 
     public function availableAppointments($doctorId)
     {
+        if (auth::user()->role !== 'patient') {
+
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $appointments = Appointment::where('doctor_id', $doctorId)
             ->where('status', 'Available')
@@ -172,6 +151,17 @@ class PatientController extends Controller
         return response()->json($appointments);
     }
 
+    public function ShowAppointments($doctorId)
+    {
+        if (auth::user()->role !== 'patient') {
+
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $appointments = Appointment::where('doctor_id', $doctorId)->get();
+
+        return response()->json($appointments);
+    }
     /**
      * Display the specified resource.
      */
@@ -214,24 +204,44 @@ class PatientController extends Controller
         ], 200);
     }
 
-  
+
 
     public function bookAppointment(Request $request, $id)
     {
-
         $appointment = Appointment::findOrFail($id);
+        $patientId = Auth::user()->patient->id;
 
         if ($appointment->status === 'Not Available') {
-            return response()->json(['message' => 'Appointment not available'], 400);
+            return response()->json(['status' => 'error', 'message' => 'Appointment not available'], 400);
+        }
+
+        $conflict = Appointment::where('patient_id', $patientId)
+            ->where('date', $appointment->date)
+            ->where('period', $appointment->period)
+            ->where(function ($query) use ($appointment) {
+                $query->where('start_time', '<', $appointment->end_time)
+                    ->where('end_time', '>', $appointment->start_time);
+            })
+            ->exists();
+
+        if ($conflict) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You already have an appointment at this time. Please choose a different time slot.'
+            ], 400);
         }
 
         $appointment->update([
-            'patient_id' => Auth::user()->patient->id,
+            'patient_id' => $patientId,
             'status' => 'Not Available',
         ]);
 
-        return response()->json(['message' => 'Appointment booked successfully!']);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Appointment booked successfully!'
+        ]);
     }
+
     public function myAppointments()
     {
 
