@@ -17,8 +17,8 @@ class DoctorSeeder extends Seeder
         User::create([
             'username' => 'doctor2',
             'email' => 'doctor2@example.com',
-            'password' => Hash::make('password123'), // يجب أن تشفري كلمة المرور
-            'role' => 'doctor', // حقل الدور، تأكدي أن لديك حقل role في جدول users
+            'password' => Hash::make('password123'), 
+            'role' => 'doctor', 
         ]);
     }
 }

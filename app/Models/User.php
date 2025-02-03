@@ -11,13 +11,15 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable ,HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens;
 
     protected $fillable = [
         'username',
         'email',
         'password',
         'role',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     protected $hidden = [
@@ -27,17 +29,17 @@ class User extends Authenticatable
 
     public function admin()
     {
-        return $this->hasOne(Admin::class,'user_id');
+        return $this->hasOne(Admin::class, 'user_id');
     }
 
     public function doctor()
     {
-        return $this->hasOne(Doctor::class,'user_id');
+        return $this->hasOne(Doctor::class, 'user_id');
     }
 
     public function patient()
     {
-        return $this->hasOne(Patient::class ,'user_id');
+        return $this->hasOne(Patient::class, 'user_id');
     }
 
     public function notifications()

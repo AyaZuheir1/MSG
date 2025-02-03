@@ -16,13 +16,19 @@ class Doctor extends Model
         'first_name',
         'last_name',
         'major',
-        'license_number',
         'country',
+        'average_rating',
         'phone_number',
-        'bio',
         'image',
+        'certificate',
+        'gender',
         'fcm_token',
     ];
+    public function doctor()
+{
+    return $this->hasOne(Doctor::class);
+}
+
 
     public function appointments()
     {
@@ -43,4 +49,5 @@ class Doctor extends Model
         // Return the FCM token of the user
         return $this->fcm_token;
     }
+   
 }

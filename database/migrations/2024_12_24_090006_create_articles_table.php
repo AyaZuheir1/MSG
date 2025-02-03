@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('id');
             $table->foreignId('admin_id')->constrained('admins')->onDelete('cascade');
             $table->string('title');
-            $table->text('summary'); 
+            $table->text('summary')->nullable(); 
             $table->longText('content');
             $table->string('image')->nullable(); 
             $table->timestamp('published_at')->nullable();

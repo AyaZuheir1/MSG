@@ -16,12 +16,13 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique();
-            $table->string('license_number')->unique();
-            $table->string('major');
+            $table->string('password');
             $table->string('country');
             $table->string('phone_number');
-            $table->string('image')->nullable(); 
+            $table->string('major');
+            $table->string('certificate');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('gender', ['male', 'female']);
             $table->timestamps();
         });
     }
