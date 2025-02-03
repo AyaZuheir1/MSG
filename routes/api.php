@@ -55,4 +55,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);
 
 });
+use App\Http\Controllers\FCMController;
+
+Route::post('/send-notification', [FCMController::class, 'sendNotification']);
 

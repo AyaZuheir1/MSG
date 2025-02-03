@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Carbon;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\FCMController;
 use App\Notifications\ReviewDoctorRequestNotification;
 use Google\Cloud\Storage\Connection\Rest;
 
@@ -35,37 +36,38 @@ class AdminController extends Controller
         return response()->json($requests);
     }
 
-    public function approveDoctorRequest($id)
+    public function approveDoctorRequest(Request $request, $id)
     {
-        $request = DoctorRequest::findOrFail($id);
+        $doctorRequest = DoctorRequest::findOrFail($id);
         $doctor = null;
-        if ($request->status === 'pending') {
+        if ($doctorRequest->status === 'pending') {
             $user = User::create([
-                'username' => strtolower($request->first_name . $request->last_name),
-                'email' => $request->email,
+                'username' => strtolower($doctorRequest->first_name . $doctorRequest->last_name),
+                'email' => $doctorRequest->email,
                 'password' => bcrypt('defaultpassword'),
                 'role' => 'doctor',
             ]);
 
             $doctor = Doctor::create([
                 'user_id' => $user->id,
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'license_number' => $request->license_number,
-                'major' => $request->major,
-                'phone_number' => $request->phone_number,
-                'country' => $request->country,
-                'image' => $request->image,
+                'first_name' => $doctorRequest->first_name,
+                'last_name' => $doctorRequest->last_name,
+                'license_number' => $doctorRequest->license_number,
+                'major' => $doctorRequest->major,
+                'phone_number' => $doctorRequest->phone_number,
+                'country' => $doctorRequest->country,
+                'image' => $doctorRequest->image,
             ]);
 
             // تحديث حالة الطلب
-            $request->update(['status' => 'approved']);
+            $doctorRequest->update(['status' => 'approved']);
 
-            // send notification to doctor
-            $status = 'accepted'; // or 'rejected'
-            $doctor->notify(new ReviewDoctorRequestNotification($status));
+            $fcmController = new FCMController();
 
-            return response()->json(['message' => 'Doctor approved successfully!']);
+           $notifyStatus =  $fcmController->sendNotification($request);
+
+            return response()->json(['message' => 'Doctor approved successfully!',
+            'status' => $notifyStatus]);
         }
 
         return response()->json(['message' => 'Request already processed!'], 400);
