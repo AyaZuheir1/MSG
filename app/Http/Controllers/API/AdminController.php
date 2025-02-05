@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use Google\Cloud\Storage\Connection\Rest;
+use App\Http\Controllers\FCMController;
 use App\Notifications\ReviewDoctorRequestNotification;
 
 
@@ -31,47 +31,38 @@ class AdminController extends Controller
         return response()->json($requests);
     }
 
-
-    public function approveDoctorRequest($id)
+    public function approveDoctorRequest(Request $request, $id)
     {
-        $request = DoctorRequest::findOrFail($id);
+        $doctorRequest = DoctorRequest::findOrFail($id);
+        $doctor = null;
+        if ($doctorRequest->status === 'pending') {
+            $user = User::create([
+                'username' => strtolower($doctorRequest->first_name . $doctorRequest->last_name),
+                'email' => $doctorRequest->email,
+                'password' => bcrypt('defaultpassword'),
+                'role' => 'doctor',
+            ]);
 
-        if ($request->status === 'pending') {
-            DB::beginTransaction();
+            $doctor = Doctor::create([
+                'user_id' => $user->id,
+                'first_name' => $doctorRequest->first_name,
+                'last_name' => $doctorRequest->last_name,
+                'license_number' => $doctorRequest->license_number,
+                'major' => $doctorRequest->major,
+                'phone_number' => $doctorRequest->phone_number,
+                'country' => $doctorRequest->country,
+                'image' => $doctorRequest->image,
+            ]);
 
-            try {
+            // تحديث حالة الطلب
+            $doctorRequest->update(['status' => 'approved']);
 
-                $user = User::create([
-                    'username' => strtolower($request->first_name . $request->last_name),
-                    'email' => $request->email,
-                    'password' => $request->password,
-                    'role' => 'doctor',
-                ]);
-                $doctor = Doctor::create([
-                    'user_id' => $user->id,
-                    'first_name' => $request->first_name,
-                    'last_name' => $request->last_name,
-                    'major' => $request->major,
-                    'phone_number' => $request->phone_number,
-                    'country' => $request->country,
-                    'certificate' => $request->certificate,
-                    'gender' => $request->gender,
-                ]);
+            $fcmController = new FCMController();
 
-                $doctor->save();
+           $notifyStatus =  $fcmController->sendNotification($request);
 
-                $request->update(['status' => 'approved']);
-
-                $status = 'accepted'; 
-                // $doctor->notify(new ReviewDoctorRequestNotification($status));
-
-                DB::commit();
-
-                return response()->json(['message' => 'Doctor approved successfully!']);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                return response()->json(['message' => 'An error occurred while approving the doctor request.', 'error' => $e->getMessage()], 500);
-            }
+            return response()->json(['message' => 'Doctor approved successfully!',
+            'status' => $notifyStatus]);
         }
 
         return response()->json(['message' => 'Request already processed!'], 400);
