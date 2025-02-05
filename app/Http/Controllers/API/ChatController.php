@@ -91,14 +91,22 @@ class ChatController extends Controller
 
     public function getMessages($appointmentId)
     {
-        $userId = Auth::id();
-
+        $user = Auth::user();
+        if ($user->role == 'doctor') {
+            $userId = $user->doctor->id;
+        } elseif ($user->role == 'patient') {
+            $userId = $user->patient->id;
+        } else {
+            return response()->json(['error' => 'Invalid user role.'], 403);
+        }
+    
+        // 🔥 2️⃣ التحقق مما إذا كان المستخدم جزءًا من الموعد
         $appointment = Appointment::where('id', $appointmentId)
             ->where(function ($query) use ($userId) {
                 $query->where('patient_id', $userId)
                       ->orWhere('doctor_id', $userId);
             })->first();
-
+    
         if (!$appointment) {
             return response()->json(['error' => 'You do not have permission to view messages for this appointment.'], 403);
         }
@@ -106,7 +114,11 @@ class ChatController extends Controller
         $messages = Message::where('appointment_id', $appointmentId)
             ->orderBy('created_at', 'asc')
             ->get();
-
+            Message::where('appointment_id', $appointmentId)
+            ->where('receiver_id', $userId)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+            
         return response()->json(['messages' => $messages]);
     }
 }

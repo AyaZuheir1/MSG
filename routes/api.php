@@ -18,6 +18,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('articles', ArticleController::class);
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/get-messages/{appointment_id}', [ChatController::class, 'getMessages']);
 
     // Patient Routes
     Route::prefix('patient')->group(function () {
