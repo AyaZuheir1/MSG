@@ -82,66 +82,55 @@ class DoctorController extends Controller
     public function addSchedule(Request $request)
     {
         $validated = $request->validate([
-            'date' => 'required|date|after_or_equal:today',
-            'period' => 'nullable|string|in:AM,PM', 
-            'start_time' => 'required|string',
-            'end_time' => 'required|string',
+            'date' => 'required|date|after_or_equal:today', 
+            'start_time' => 'required|date_format:h:i A', 
+            'end_time' => 'required|date_format:h:i A',
         ]);
-
-        // Convert and normalize time inputs
-        $validated['start_time'] = $this->normalizeTimeTo12Hour($validated['start_time'], $validated['period']);
-        $validated['end_time'] = $this->normalizeTimeTo12Hour($validated['end_time'], $validated['period']);
-
-        if (!$validated['start_time'] || !$validated['end_time']) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid time format. Please enter a valid time (e.g., "10:30 AM" or "10 PM").'
-            ], 422);
-        }
-
-        // Extract AM/PM from the converted time
-        $validated['period'] = Carbon::parse($validated['start_time'])->format('A'); 
-        $validated['start_time'] = Carbon::parse($validated['start_time'])->format('h:i'); 
-        $validated['end_time'] = Carbon::parse($validated['end_time'])->format('h:i'); 
-        if (Carbon::parse($validated['start_time'] . ' ' . $validated['period'])->greaterThanOrEqualTo(Carbon::parse($validated['end_time'] . ' ' . $validated['period']))) {
+    
+        $doctorId = Auth::user()->doctor->id;
+    
+        $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
+        $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
+    
+        if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'End time must be later than start time.'
             ], 422);
         }
-
-        // Ensure appointment is not in the past
-        if (Carbon::parse($validated['date'] . ' ' . $validated['start_time'] . ' ' . $validated['period'])->isPast()) {
+    
+        $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
+        if ($appointmentStart->isPast()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'The selected appointment time has already passed. Please choose a future time.'
             ], 422);
         }
-
-        $doctorId = Auth::user()->doctor->id;
-
+    
         $conflict = Appointment::where('doctor_id', $doctorId)
             ->where('date', $validated['date'])
-            ->where('period', $validated['period']) 
-            ->where(function ($query) use ($validated) {
-                $query->where(function ($q) use ($validated) {
-                    $q->where('start_time', '<', $validated['end_time'])
-                        ->where('end_time', '>', $validated['start_time']);
+            ->where(function ($query) use ($startTime24, $endTime24) {
+                $query->where(function ($q) use ($startTime24, $endTime24) {
+                    $q->where('start_time', '<', $endTime24) 
+                      ->where('end_time', '>', $startTime24); 
                 });
             })->exists();
-
+    
         if ($conflict) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time within the same period (AM/PM).'
+                'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
             ], 422);
         }
-
-        $validated['doctor_id'] = $doctorId;
-        $validated['status'] = 'Available';
-
-        $appointment = Appointment::create($validated);
-
+    
+        $appointment = Appointment::create([
+            'doctor_id' => $doctorId,
+            'date' => $validated['date'],
+            'start_time' => $startTime24, 
+            'end_time' => $endTime24,  
+            'status' => 'Available'
+        ]);
+    
         return response()->json([
             'status' => 'success',
             'message' => 'Schedule added successfully!',
@@ -149,9 +138,9 @@ class DoctorController extends Controller
         ]);
     }
 
-    /**
-     * Normalize time input and convert it to 12-hour format
-     */
+   
+
+
     private function normalizeTimeTo12Hour($time, $period = null)
     {
         if (preg_match('/^\d{1,2}$/', $time)) {
@@ -314,82 +303,77 @@ class DoctorController extends Controller
 }
 
 
-    
-    public function destroy(string $id)
-    {
-        //
-    }
+   
 
     public function updateSchedule(Request $request, $appointmentId)
     {
         $validated = $request->validate([
-            'date' => 'required|date|after_or_equal:today',
-            'period' => 'nullable|string|in:AM,PM',
-            'start_time' => 'required|string',
-            'end_time' => 'required|string',
+            'date' => 'required|date|after_or_equal:today', 
+            'start_time' => 'required|date_format:h:i A', 
+            'end_time' => 'required|date_format:h:i A',
         ]);
-
+    
         $appointment = Appointment::findOrFail($appointmentId);
-
-        $validated['start_time'] = $this->normalizeTimeTo12Hour($validated['start_time'], $validated['period']);
-        $validated['end_time'] = $this->normalizeTimeTo12Hour($validated['end_time'], $validated['period']);
-
-        if (!$validated['start_time'] || !$validated['end_time']) {
+    
+        $doctorId = Auth::user()->doctor->id;
+        if ($appointment->doctor_id !== $doctorId) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Invalid time format. Please enter a valid time (e.g., "10:30 AM" or "10 PM").'
-            ], 422);
+                'message' => 'You do not have permission to modify this schedule.'
+            ], 403);
         }
 
-        $validated['period'] = Carbon::parse($validated['start_time'])->format('A'); 
-        $validated['start_time'] = Carbon::parse($validated['start_time'])->format('h:i'); 
-        $validated['end_time'] = Carbon::parse($validated['end_time'])->format('h:i'); 
-
-        if (Carbon::parse($validated['start_time'] . ' ' . $validated['period'])->greaterThanOrEqualTo(Carbon::parse($validated['end_time'] . ' ' . $validated['period']))) {
+        if ($appointment->status !== 'Available') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This appointment has already been booked and cannot be modified.'
+            ], 422);
+        }
+    
+        $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
+        $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
+    
+        if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'End time must be later than start time.'
             ], 422);
         }
-
-        if (Carbon::parse($validated['date'] . ' ' . $validated['start_time'] . ' ' . $validated['period'])->isPast()) {
+    
+        $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
+        if ($appointmentStart->isPast()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'The selected appointment time has already passed. Please choose a future time.'
             ], 422);
         }
-
-        $doctorId = Auth::user()->doctor->id;
-
+    
         $conflict = Appointment::where('doctor_id', $doctorId)
             ->where('date', $validated['date'])
-            ->where('period', $validated['period']) 
-            ->where(function ($query) use ($validated) {
-                $query->where(function ($q) use ($validated) {
-                    $q->where('start_time', '<', $validated['end_time'])
-                        ->where('end_time', '>', $validated['start_time']);
+            ->where('id', '!=', $appointmentId) 
+            ->where(function ($query) use ($startTime24, $endTime24) {
+                $query->where(function ($q) use ($startTime24, $endTime24) {
+                    $q->where('start_time', '<', $endTime24) 
+                      ->where('end_time', '>', $startTime24); 
                 });
-            })
-            ->where('id', '!=', $appointment->id) 
-            ->exists();
-
+            })->exists();
+    
         if ($conflict) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time within the same period (AM/PM).'
+                'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
             ], 422);
         }
-
+    
         $appointment->update([
             'date' => $validated['date'],
-            'start_time' => $validated['start_time'],
-            'end_time' => $validated['end_time'],
-            'period' => $validated['period'],
+            'start_time' => $startTime24, 
+            'end_time' => $endTime24,     
         ]);
-
+    
         return response()->json([
             'status' => 'success',
-            'message' => 'Appointment updated successfully!',
+            'message' => 'Schedule updated successfully!',
             'appointment' => $appointment
         ]);
     }

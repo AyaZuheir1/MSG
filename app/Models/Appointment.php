@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -28,4 +29,14 @@ class Appointment extends Model
     {
         return $this->belongsTo(Doctor::class);
     }
+
+    // public function setStartTimeAttribute($value)
+    // {
+    //     $this->attributes['start_time'] = Carbon::createFromFormat('h:i A', $value)->format('H:i');
+    // }
+
+    // public function setEndTimeAttribute($value)
+    // {
+    //     $this->attributes['end_time'] = Carbon::createFromFormat('h:i A', $value)->format('H:i');
+    // }
 }

@@ -2,13 +2,14 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\API\ChatController;
 use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\PatientController;
-use Illuminate\Support\Facades\Mail;
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
@@ -17,6 +18,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('articles', ArticleController::class);
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/get-messages/{appointment_id}', [ChatController::class, 'getMessages']);
 
     // Patient Routes
     Route::prefix('patient')->group(function () {
@@ -52,7 +54,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);
     });
 });
-
+Route::middleware('auth:sanctum')->post('/send-message', [ChatController::class, 'sendMessage']);
+Route::middleware('auth:sanctum')->get('/get-messages/{appointmentId}', [ChatController::class, 'getMessages']);
 
 Route::post('/select-role', [AuthController::class, 'selectRole']);
 Route::post('/patient/register', [PatientController::class, 'register']);
