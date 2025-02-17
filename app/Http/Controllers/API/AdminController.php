@@ -9,15 +9,15 @@ use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FCMController;
-use App\Notifications\ReviewDoctorRequestNotification;
+use App\Notifications\DoctorAccountActivate;
 
+// use App\Http\Controllers\API\DoctorAccountActivate;
 
 class AdminController extends Controller
 {
     public function getDoctorRequests(Request $request)
     {
-        $status = $request->query('status'); 
-
+        $status = $request->query('status');
         if ($status) {
             if (!in_array($status, ['pending', 'approved', 'rejected'])) {
                 return response()->json(['message' => 'Invalid status'], 400);
@@ -28,7 +28,10 @@ class AdminController extends Controller
             $requests = DoctorRequest::all();
         }
 
-        return response()->json($requests);
+        return response()->json([
+            'code' => 200,
+            'message' => $requests,
+        ], 200);
     }
 
     public function approveDoctorRequest(Request $request, $id)
@@ -41,6 +44,7 @@ class AdminController extends Controller
                 'email' => $doctorRequest->email,
                 'password' => bcrypt('defaultpassword'),
                 'role' => 'doctor',
+                'fcm_token' => $request->token,
             ]);
 
             $doctor = Doctor::create([
@@ -52,74 +56,56 @@ class AdminController extends Controller
                 'phone_number' => $doctorRequest->phone_number,
                 'country' => $doctorRequest->country,
                 'image' => $doctorRequest->image,
+                'certificate' => $doctorRequest->certificate,
             ]);
 
             // تحديث حالة الطلب
             $doctorRequest->update(['status' => 'approved']);
+            $fcmController = new FCMController();
+            // return "Pending";
+            $deviceToken = "1|V5JSddLZlMu7FaXrEaK9Hv3A8Hva59iPveSG7YkQ0542bb6f";
+            $title = "Your request has been approved";
+            $body = "Congratulations! YOU ARE A DOCTOR IN MEDSUPPORTGAZA";
+            // return $body;
+            $notifyStatus =  $fcmController->sendNotification($request, $deviceToken, $title, $body);
+            // $doctor->notify(new DoctorAccountActivate());
+
+            // $user->notify(new DoctorAccountActivate);
+            return response()->json([
+                'message' => 'Doctor approved successfully!',
+                'status' => $notifyStatus,
+            ]);
+        }
+
+        return response()->json(['message' => 'Request already processed!'], 400);
+    }
+
+
+    public function rejectDoctorRequest(Request $request, $id)
+    {
+        $doctorRequest = DoctorRequest::findOrFail($id);
+
+        if ($doctorRequest->status === 'pending') {
+            $doctorRequest->update(['status' => 'rejected']);
 
             $fcmController = new FCMController();
+            // return "Pending";
+            $deviceToken =$request->token;
+            $title = "Your request has been rejected";
+            $body = "Sorry, your request has been rejected";
+            // return $body;
+            $notifyStatus =  $fcmController->sendNotification($request, $deviceToken, $title, $body);
 
-           $notifyStatus =  $fcmController->sendNotification($request);
-
-            return response()->json(['message' => 'Doctor approved successfully!',
-            'status' => $notifyStatus]);
+            return response()->json([
+                'code' => 200,
+                'message' => 'Doctor request rejected successfully!',
+                'notify_status' =>$notifyStatus,
+            ], 200);
         }
 
-        return response()->json(['message' => 'Request already processed!'], 400);
-    }
-
-
-    public function rejectDoctorRequest($id)
-    {
-        $request = DoctorRequest::findOrFail($id);
-
-        if ($request->status === 'pending') {
-            $request->update(['status' => 'rejected']);
-            return response()->json(['message' => 'Doctor request rejected successfully!']);
-        }
-
-        return response()->json(['message' => 'Request already processed!'], 400);
-    }
-
-
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'code' => 400,
+            'message' => 'Request already processed!'
+        ], 400);
     }
 }

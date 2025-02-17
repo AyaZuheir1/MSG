@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "74010ecc0943ab937458575ba76cd925",
+    "content-hash": "c1f0bdffe588c850dec2edd7d2777753",
     "packages": [
         {
             "name": "beste/clock",
@@ -2102,6 +2102,65 @@
                 }
             ],
             "time": "2024-11-22T13:02:38+00:00"
+        },
+        {
+            "name": "laravel-notification-channels/expo",
+            "version": "1.3.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel-notification-channels/expo.git",
+                "reference": "d718a89dfc4997aba69b673f5db416ac833188e9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel-notification-channels/expo/zipball/d718a89dfc4997aba69b673f5db416ac833188e9",
+                "reference": "d718a89dfc4997aba69b673f5db416ac833188e9",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "guzzlehttp/guzzle": "~6.0 || ~7.0",
+                "illuminate/notifications": "~6.0 || ~7.0 || ~8.0 || ~9.0 || ~10.0 || ~11.0",
+                "illuminate/support": "~6.0 || ~7.0 || ~8.0 || ~9.0 || ~10.0 || ~11.0",
+                "php": ">=7.4 || ^8.0 || ^8.1 || ^8.2 || ^8.3"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.0",
+                "orchestra/testbench": "^6.18",
+                "phpunit/phpunit": "^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "NotificationChannels\\Expo\\ExpoServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "NotificationChannels\\Expo\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Nick Pratley",
+                    "email": "nick@npratley.net",
+                    "homepage": "https://npratley.net/",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Expo Notifications driver for Laravel",
+            "homepage": "https://github.com/laravel-notification-channels/expo",
+            "support": {
+                "issues": "https://github.com/laravel-notification-channels/expo/issues",
+                "source": "https://github.com/laravel-notification-channels/expo/tree/1.3.1"
+            },
+            "time": "2024-03-15T00:24:58+00:00"
         },
         {
             "name": "laravel-notification-channels/fcm",
@@ -9901,5 +9960,5 @@
         "php": "^8.2"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }

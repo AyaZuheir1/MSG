@@ -49,5 +49,5 @@ class Doctor extends Model
         // Return the FCM token of the user
         return $this->fcm_token;
     }
-   
+    
 }

@@ -10,20 +10,20 @@ use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
-    public function selectRole(Request $request)
-    {
-        $validatedData = $request->validate([
-            'role' => 'required|in:doctor,patient',
-        ]);
+    // public function selectRole(Request $request)
+    // {
+    //     $validatedData = $request->validate([
+    //         'role' => 'required|in:doctor,patient',
+    //     ]);
 
-        $redirectPage = $validatedData['role'] === 'doctor' ? '/doctor/splash' : '/patient/splash';
+    //     $redirectPage = $validatedData['role'] === 'doctor' ? '/doctor/splash' : '/patient/splash';
 
-        return response()->json([
-            'message' => 'Role selected successfully!',
-            'role' => $validatedData['role'],
-            'redirect_to' => $redirectPage,
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => 'Role selected successfully!',
+    //         'role' => $validatedData['role'],
+    //         'redirect_to' => $redirectPage,
+    //     ]);
+    // }
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -52,9 +52,10 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
-        return [
-            'msg' => 'you are logged out',
-        ];
+        return response()->json([
+            'code' => 200,
+            'message' => 'YOU ARE LOGGED OUT!',
+        ]);
     }
 
 

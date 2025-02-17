@@ -16,12 +16,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([
-        //     AdminSeeder::class, // استدعاء السيدر الخاص بالأدمن
-        //     DoctorSeeder::class, 
-        // ]);
+        $this->call([
+            AdminSeeder::class, // استدعاء السيدر الخاص بالأدمن
+            DoctorSeeder::class, 
+        ]);
 
-        // User::factory(10)->create(); // إنشاء مستخدمين
+        User::factory(10)->create(); // إنشاء مستخدمين
         // Doctor::factory(5)->create(); // إنشاء أطباء
         // Patient::factory(5)->create(); // إنشاء مرضى
         // Appointment::factory(20)->create(); 

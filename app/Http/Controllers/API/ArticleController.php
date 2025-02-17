@@ -21,8 +21,11 @@ class ArticleController extends Controller
 
     public function index()
     {
-        $articles = Article::select('id', 'title', 'summary', 'image')->get();
-        return response()->json($articles);
+        $articles = Article::all();
+        return response()->json([
+            'code' => 200,
+            'articles' => $articles
+        ]);
     }
 
     /**
@@ -35,7 +38,7 @@ class ArticleController extends Controller
             'summary' => 'nullable|string|max:500',
             'content' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'published_at' => 'nullable|date_format:Y-m-d H:i:s'
+            'status' => 'in:published,deleted',
         ]);
 
         if (auth::user()->role !== 'admin') {
@@ -48,9 +51,9 @@ class ArticleController extends Controller
             $validated['summary'] = Str::words($validated['content'], 20, '...');
         }
 
-        if (empty($validated['published_at'])) {
-            $validated['published_at'] = now();
-        }
+        // if (empty($validated['published_at'])) {
+        //     $validated['published_at'] = now();
+        // }
 
         if ($request->hasFile('image')) {
             $imageName = $request->file('image')->store('images/articles', 'public');
@@ -58,13 +61,15 @@ class ArticleController extends Controller
         } else {
             $validated['image'] = null;
         }
-
+        $validated['published_at'] = now();
         $article = Article::create($validated);
 
         return response()->json([
-            'message' => 'Article added successfully!',
+            'code',
+            201,
+            'message' => 'Article Published successfully!',
             'article' => $article
-        ]);
+        ], 201);
     }
 
 
@@ -75,12 +80,8 @@ class ArticleController extends Controller
     {
         $article = Article::findOrFail($id);
 
-        if (!$article) {
-            return response()->json(['message' => 'Article not found'], 404);
-        }
-
         return response()->json([
-            'status' => 'success',
+            'code' => 200,
             'article' => $article
         ]);
     }
@@ -115,14 +116,12 @@ class ArticleController extends Controller
         if (auth::user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'summary' => 'sometimes|required|string|max:500',
             'content' => 'sometimes|required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
 
         if ($request->hasFile('image')) {
             if ($article->image) {
@@ -143,25 +142,63 @@ class ArticleController extends Controller
 
     public function destroy(string $id)
     {
-        $article = Article::findOrFail($id);
-
-        if (auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $deleted = Article::destroy($id);
+        if ($deleted) {
+            return response()->json([
+                'code' => 200,
+                'message' => 'Article deleted successfully!',
+            ]);
         }
-
-        if ($article->image) {
-            Storage::disk('public')->delete($article->image);
-        }
-
-        $article->delete();
-
         return response()->json([
-            'message' => 'Article deleted successfully!',
-        ]);
+            'code' => 404,
+            'message' => 'Article Not Found!',
+        ],404);
     }
     public function Articles()
     {
         $articles = Article::orderBy('created_at', 'desc')->paginate(5);
-        return $articles;
+        return response()->json([
+            'code' => 200,
+            'articles' => $articles,
+        ]);
+    }
+    public function restore($id)
+    {
+        $article = Article::onlyTrashed()->find($id);
+        if (!$article) {
+            return response()->json(['message' => 'Article not found'], 404);
+        }
+        $article->restore();
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'article restored successfully',
+            'article' => $article,
+        ]);
+    }
+    public function trashedArticle()
+    {
+        $articles = Article::onlyTrashed()->get();
+        return response()->json([
+            'code' => 200,
+            'articles' => $articles,
+        ]);
+    }
+    public function forceDelete($id)
+    {
+        $article = Article::withTrashed()->findOrFail($id);
+        if(!$article){
+            return response()->json([
+                'code' => 404,
+                'message' => 'Article not found',
+            ]);
+        }
+       $article->forceDelete();
+    //    $article->delete();
+    return $article;
+        return response()->json([
+            'code' => 202,
+            'message' => 'Article permanently deleted successfully',
+        ]);
     }
 }

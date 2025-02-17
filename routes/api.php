@@ -10,12 +10,17 @@ use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\PatientController;
+Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
+Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
+Route::get('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
-    Route::get('/articles/search', [ArticleController::class, 'search']);
-
     Route::apiResource('articles', ArticleController::class);
+    Route::get('/articles/search', [ArticleController::class, 'search']);
+    // Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
+    // Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
+    // Route::get('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/get-messages/{appointment_id}', [ChatController::class, 'getMessages']);

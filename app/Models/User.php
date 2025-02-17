@@ -20,6 +20,7 @@ class User extends Authenticatable
         'role',
         'otp_code',
         'otp_expires_at',
+        'fcm_token',
     ];
 
     protected $hidden = [
@@ -45,5 +46,10 @@ class User extends Authenticatable
     public function notifications()
     {
         return $this->hasMany(Notification::class, 'sender_id');
+    }
+    public function routeNotificationForFcm()
+    {
+        // Return the FCM token of the user
+        return $this->fcm_token;
     }
 }

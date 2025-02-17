@@ -29,7 +29,9 @@ class ArticalePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        if ($user->role !== 'admin')
+            return false;
+        return true;
     }
 
     /**
@@ -37,7 +39,9 @@ class ArticalePolicy
      */
     public function update(User $user, Articale $articale): bool
     {
-        return false;
+        if ($user->role !== 'admin')
+            return false;
+        return true;
     }
 
     /**
@@ -45,7 +49,9 @@ class ArticalePolicy
      */
     public function delete(User $user, Articale $articale): bool
     {
-        return false;
+        if ($user->role !== 'admin')
+            return false;
+        return true;
     }
 
     /**
@@ -61,6 +67,8 @@ class ArticalePolicy
      */
     public function forceDelete(User $user, Articale $articale): bool
     {
-        return false;
+        if ($user->role !== 'admin')
+            return false;
+        return true;
     }
 }

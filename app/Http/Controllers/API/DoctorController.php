@@ -24,9 +24,14 @@ class DoctorController extends Controller
     }
     public function profile(Request $request)
     {
-        $doctor = $request->user()->doctor;
-        return response()->json($doctor);
+        $doctor =  Doctor::findOrFail($request->user()->id);
+        return response()->json([
+                'doctor' => $doctor
+            ]
+        );
     }
+
+
     public function register(Request $request)
     {
         $validatedData = $request->validate([
@@ -45,16 +50,17 @@ class DoctorController extends Controller
         try {
             $existingRequest = DoctorRequest::where('email', $validatedData['email'])->first();
 
-            if ($existingRequest && $existingRequest->status === 'rejected') {
-                $existingRequest->delete();
+            if ($existingRequest) {
+                if ($existingRequest->status === 'rejected') {
+                    $existingRequest->delete();
+                } else {
+                    return response()->json(['message' => 'A request with this email is already pending.'], 400);
+                }
             }
 
+            $certificatePath = null;
             if ($request->hasFile('certificate')) {
-                $certificate = $request->file('certificate');
-                $certificateName = time() . '.' . $certificate->getClientOriginalExtension();
-                $certificate->storeAs('public/doctors/certificates', $certificateName);
-            } else {
-                $certificateName = null;
+                $certificatePath = $request->file('certificate')->store('doctors/certificates', 'public');
             }
 
             DoctorRequest::create([
@@ -66,39 +72,46 @@ class DoctorController extends Controller
                 'phone_number' => $validatedData['phone_number'],
                 'gender' => $validatedData['gender'],
                 'major' => $validatedData['major'],
-                'certificate' => $certificateName,
+                'certificate' => $certificatePath,
                 'status' => 'pending',
             ]);
 
             DB::commit();
-
             return response()->json(['message' => 'Registration request submitted successfully!'], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'An error occurred. Please try again later.'], 500);
+
+            // Remove stored file if an error occurs
+            if ($certificatePath) {
+                Storage::disk('public')->delete($certificatePath);
+            }
+//WHY????????????????????????????????????????????????????/
+return response()->json(['message' => env('APP_DEBUG') ? $e->getMessage() : 'An error occurred. Please try again later.'], 500);
+//WHY????????????????????????????????????????????????????/
         }
     }
+
 
     public function addSchedule(Request $request)
     {
         $validated = $request->validate([
-            'date' => 'required|date|after_or_equal:today', 
-            'start_time' => 'required|date_format:h:i A', 
+            'date' => 'required|date|after_or_equal:today',
+            'start_time' => 'required|date_format:h:i A',
             'end_time' => 'required|date_format:h:i A',
         ]);
-    
+
         $doctorId = Auth::user()->doctor->id;
-    
+
         $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
         $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
-    
+
         if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'End time must be later than start time.'
             ], 422);
         }
-    
+
         $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
         if ($appointmentStart->isPast()) {
             return response()->json([
@@ -106,31 +119,31 @@ class DoctorController extends Controller
                 'message' => 'The selected appointment time has already passed. Please choose a future time.'
             ], 422);
         }
-    
+
         $conflict = Appointment::where('doctor_id', $doctorId)
             ->where('date', $validated['date'])
             ->where(function ($query) use ($startTime24, $endTime24) {
                 $query->where(function ($q) use ($startTime24, $endTime24) {
-                    $q->where('start_time', '<', $endTime24) 
-                      ->where('end_time', '>', $startTime24); 
+                    $q->where('start_time', '<', $endTime24)
+                        ->where('end_time', '>', $startTime24);
                 });
             })->exists();
-    
+
         if ($conflict) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
             ], 422);
         }
-    
+
         $appointment = Appointment::create([
             'doctor_id' => $doctorId,
             'date' => $validated['date'],
-            'start_time' => $startTime24, 
-            'end_time' => $endTime24,  
+            'start_time' => $startTime24,
+            'end_time' => $endTime24,
             'status' => 'Available'
         ]);
-    
+
         return response()->json([
             'status' => 'success',
             'message' => 'Schedule added successfully!',
@@ -138,7 +151,7 @@ class DoctorController extends Controller
         ]);
     }
 
-   
+
 
 
     private function normalizeTimeTo12Hour($time, $period = null)
@@ -154,7 +167,7 @@ class DoctorController extends Controller
 
             return $carbonTime->format('h:i A');
         } catch (\Exception $e) {
-            return null; 
+            return null;
         }
     }
 
@@ -274,47 +287,47 @@ class DoctorController extends Controller
     }
 
     public function searchDoctors(Request $request)
-{
-    $validatedData = $request->validate([
-        'name' => 'nullable|string',
-        'major' => 'nullable|string',
-    ]);
+    {
+        $validatedData = $request->validate([
+            'name' => 'nullable|string',
+            'major' => 'nullable|string',
+        ]);
 
-    $query = Doctor::query();
+        $query = Doctor::query();
 
-    if (!empty($validatedData['name'])) {
-        $query->whereRaw("LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(?)", ['%' . strtolower($validatedData['name']) . '%']);
+        if (!empty($validatedData['name'])) {
+            $query->whereRaw("LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(?)", ['%' . strtolower($validatedData['name']) . '%']);
+        }
+
+        if (!empty($validatedData['major'])) {
+            $query->whereRaw("LOWER(major) LIKE LOWER(?)", ['%' . strtolower($validatedData['major']) . '%']);
+        }
+
+        $doctors = $query->get();
+
+        if ($doctors->isEmpty()) {
+            return response()->json(['message' => 'No doctors found'], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'doctors' => $doctors
+        ]);
     }
 
-    if (!empty($validatedData['major'])) {
-        $query->whereRaw("LOWER(major) LIKE LOWER(?)", ['%' . strtolower($validatedData['major']) . '%']);
-    }
-
-    $doctors = $query->get();
-
-    if ($doctors->isEmpty()) {
-        return response()->json(['message' => 'No doctors found'], 404);
-    }
-
-    return response()->json([
-        'status' => 'success',
-        'doctors' => $doctors
-    ]);
-}
 
 
-   
 
     public function updateSchedule(Request $request, $appointmentId)
     {
         $validated = $request->validate([
-            'date' => 'required|date|after_or_equal:today', 
-            'start_time' => 'required|date_format:h:i A', 
+            'date' => 'required|date|after_or_equal:today',
+            'start_time' => 'required|date_format:h:i A',
             'end_time' => 'required|date_format:h:i A',
         ]);
-    
+
         $appointment = Appointment::findOrFail($appointmentId);
-    
+
         $doctorId = Auth::user()->doctor->id;
         if ($appointment->doctor_id !== $doctorId) {
             return response()->json([
@@ -329,17 +342,17 @@ class DoctorController extends Controller
                 'message' => 'This appointment has already been booked and cannot be modified.'
             ], 422);
         }
-    
+
         $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
         $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
-    
+
         if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'End time must be later than start time.'
             ], 422);
         }
-    
+
         $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
         if ($appointmentStart->isPast()) {
             return response()->json([
@@ -347,30 +360,30 @@ class DoctorController extends Controller
                 'message' => 'The selected appointment time has already passed. Please choose a future time.'
             ], 422);
         }
-    
+
         $conflict = Appointment::where('doctor_id', $doctorId)
             ->where('date', $validated['date'])
-            ->where('id', '!=', $appointmentId) 
+            ->where('id', '!=', $appointmentId)
             ->where(function ($query) use ($startTime24, $endTime24) {
                 $query->where(function ($q) use ($startTime24, $endTime24) {
-                    $q->where('start_time', '<', $endTime24) 
-                      ->where('end_time', '>', $startTime24); 
+                    $q->where('start_time', '<', $endTime24)
+                        ->where('end_time', '>', $startTime24);
                 });
             })->exists();
-    
+
         if ($conflict) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
             ], 422);
         }
-    
+
         $appointment->update([
             'date' => $validated['date'],
-            'start_time' => $startTime24, 
-            'end_time' => $endTime24,     
+            'start_time' => $startTime24,
+            'end_time' => $endTime24,
         ]);
-    
+
         return response()->json([
             'status' => 'success',
             'message' => 'Schedule updated successfully!',

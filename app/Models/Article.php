@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Article extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes;
 
     protected $fillable = [
         'admin_id',
@@ -18,6 +19,16 @@ class Article extends Model
         'published_at',
     ];
 
+    protected  static function booted(){
+        static::deleted(function(Article $article){
+            $article->status = 'deleted';
+            $article->save();
+        });
+        static::restoring(function(Article $article){
+            $article->status = 'published';
+            $article->save();
+        });
+    }
 
     public function admin()
     {
