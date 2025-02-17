@@ -30,11 +30,20 @@ class AuthController extends Controller
             'email' => 'required|exists:users,email',
             'password' => 'required',
         ]);
+
         $user = User::where('email', $request->email)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
             Auth::login($user);
             $token = $user->createToken($user->username)->plainTextToken;
+            $userole = null;
+            if ($user->role === 'patient') {
+                $userole = $user->patient;
+            }
+
+            if ($user->role === 'doctor') {
+                $userole = $user->doctor;
+            }
 
             return response()->json([
                 'message' => 'Login successful.',
