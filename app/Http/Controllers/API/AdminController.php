@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FCMController;
 use App\Notifications\DoctorAccountActivate;
+use Illuminate\Support\Facades\Auth;
 
 // use App\Http\Controllers\API\DoctorAccountActivate;
 
@@ -17,6 +18,9 @@ class AdminController extends Controller
 {
     public function getDoctorRequests(Request $request)
     {
+        if(!(Auth::user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
+        }
         $status = $request->query('status');
         if ($status) {
             if (!in_array($status, ['pending', 'approved', 'rejected'])) {
@@ -36,6 +40,9 @@ class AdminController extends Controller
 
     public function approveDoctorRequest(Request $request, $id)
     {
+        if(!(Auth::user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
+        }
         $doctorRequest = DoctorRequest::findOrFail($id);
         $doctor = null;
         if ($doctorRequest->status === 'pending') {
@@ -83,6 +90,10 @@ class AdminController extends Controller
 
     public function rejectDoctorRequest(Request $request, $id)
     {
+        // return !($request->user()->role == 'admin');
+        if(!(Auth::user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
+        }
         $doctorRequest = DoctorRequest::findOrFail($id);
 
         if ($doctorRequest->status === 'pending') {

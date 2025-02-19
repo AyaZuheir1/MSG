@@ -2,9 +2,9 @@
 
 return [
 
-    // 'providers' => [
-    //     App\Providers\FirebaseServiceProvider::class,
-    // ],
+    'providers' => [
+        App\Providers\AuthServiceProvider::class,
+    ],
     /*
     |--------------------------------------------------------------------------
     | Application Name

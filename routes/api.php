@@ -10,13 +10,14 @@ use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\PatientController;
-Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
+
 Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
-Route::get('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
-
+Route::delete('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
 Route::middleware(['auth:sanctum'])->group(function () {
-
+    
     Route::apiResource('articles', ArticleController::class);
+    Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
+    // Route::put('articles/{id}', [ArticleController::class,'update']); // override to avoid Not Found error
     Route::get('/articles/search', [ArticleController::class, 'search']);
     // Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
     // Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
@@ -68,5 +69,5 @@ Route::post('/doctor/register', [DoctorController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 Route::post('/resendOtp', [AuthController::class, 'resendOtp']);

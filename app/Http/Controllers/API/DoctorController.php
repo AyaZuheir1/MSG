@@ -49,7 +49,7 @@ class DoctorController extends Controller
         DB::beginTransaction();
         try {
             $existingRequest = DoctorRequest::where('email', $validatedData['email'])->first();
-
+// return $existingRequest;
             if ($existingRequest) {
                 if ($existingRequest->status === 'rejected') {
                     $existingRequest->delete();
@@ -82,14 +82,14 @@ class DoctorController extends Controller
             DB::rollBack();
 
             // Remove stored file if an error occurs
-            if ($certificatePath) {
-                Storage::disk('public')->delete($certificatePath);
+            // if ($certificatePath) {
+            //     Storage::disk('public')->delete($certificatePath);
             }
 //WHY????????????????????????????????????????????????????/
-return response()->json(['message' => env('APP_DEBUG') ? $e->getMessage() : 'An error occurred. Please try again later.'], 500);
+return response()->json(['message' =>  $e->getMessage() ], 500);
 //WHY????????????????????????????????????????????????????/
         }
-    }
+    
 
 
     public function addSchedule(Request $request)

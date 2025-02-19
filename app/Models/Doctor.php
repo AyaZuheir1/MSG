@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
@@ -9,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Doctor extends Model
 {
-    use HasFactory ,HasApiTokens ,Notifiable;
+    use HasFactory, HasApiTokens, Notifiable;
 
     protected $fillable = [
         'user_id',
@@ -24,10 +25,22 @@ class Doctor extends Model
         'gender',
         'fcm_token',
     ];
+    protected function firstName(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string $value) => ucwords($value),
+        );
+    }
+    protected function lastName(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string $value) => ucwords($value),
+        );
+    }
     public function doctor()
-{
-    return $this->hasOne(Doctor::class);
-}
+    {
+        return $this->hasOne(Doctor::class);
+    }
 
 
     public function appointments()
@@ -49,5 +62,4 @@ class Doctor extends Model
         // Return the FCM token of the user
         return $this->fcm_token;
     }
-    
 }

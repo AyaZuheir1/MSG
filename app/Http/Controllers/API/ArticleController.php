@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class ArticleController extends Controller
@@ -21,7 +22,7 @@ class ArticleController extends Controller
 
     public function index()
     {
-        $articles = Article::all();
+        $articles = Article::paginate(3);
         return response()->json([
             'code' => 200,
             'articles' => $articles
@@ -40,20 +41,21 @@ class ArticleController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'status' => 'in:published,deleted',
         ]);
-
-        if (auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if(!(Auth::user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
         }
-
+    //     return (!(Gate::allows('manage-article')));
+    //     if (!(Gate::allows('manage-article'))) {
+    //     return "Sorry, you are not allowed to";
+    // }
+// if(!$user->role == 'admin') {
+//     abort(403, 'You are not allowed to publish articles.');
+// }
         $validated['admin_id'] = auth::user()->admin->id;
 
         if (empty($validated['summary'])) {
             $validated['summary'] = Str::words($validated['content'], 20, '...');
         }
-
-        // if (empty($validated['published_at'])) {
-        //     $validated['published_at'] = now();
-        // }
 
         if ($request->hasFile('image')) {
             $imageName = $request->file('image')->store('images/articles', 'public');
@@ -111,11 +113,20 @@ class ArticleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Article $article)
+    public function update(Request $request, $id)
     {
-        if (auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = Request()->user();
+        if(!($request->user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
         }
+        $article = Article::find($id);
+        if (!$article) {
+            return response()->json(['message' => 'Article Not Found'], 404);
+        }
+        // if (!(Gate::allows('manage-article', $article))) {
+        //     abort(403,"not allowed");
+        // }
+
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'summary' => 'sometimes|required|string|max:500',
@@ -142,6 +153,13 @@ class ArticleController extends Controller
 
     public function destroy(string $id)
     {
+        if(!(Auth::user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
+        }
+        $article = Article::find($id);
+        if (! Gate::allows('manage-article', $article)) {
+            abort(403);
+        }
         $deleted = Article::destroy($id);
         if ($deleted) {
             return response()->json([
@@ -152,7 +170,7 @@ class ArticleController extends Controller
         return response()->json([
             'code' => 404,
             'message' => 'Article Not Found!',
-        ],404);
+        ], 404);
     }
     public function Articles()
     {
@@ -164,6 +182,9 @@ class ArticleController extends Controller
     }
     public function restore($id)
     {
+        if(!(Auth::user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
+        }
         $article = Article::onlyTrashed()->find($id);
         if (!$article) {
             return response()->json(['message' => 'Article not found'], 404);
@@ -178,27 +199,40 @@ class ArticleController extends Controller
     }
     public function trashedArticle()
     {
-        $articles = Article::onlyTrashed()->get();
+        if(!(Auth::user()->role == 'admin')) {
+            abort(403, 'You are not authorized.');
+        }        $articles = Article::onlyTrashed()->get();
         return response()->json([
             'code' => 200,
             'articles' => $articles,
         ]);
     }
     public function forceDelete($id)
-    {
-        $article = Article::withTrashed()->findOrFail($id);
-        if(!$article){
+{
+    if(!(Auth::user()->role == 'admin')) {
+        abort(403, 'You are not authorized.');
+    }    try {
+        $article = Article::withTrashed()->find($id);
+// return $article;
+        if (!$article) {
             return response()->json([
                 'code' => 404,
                 'message' => 'Article not found',
-            ]);
+            ], 404);
         }
-       $article->forceDelete();
-    //    $article->delete();
-    return $article;
+        $article->delete();
+// return $article;
         return response()->json([
             'code' => 202,
             'message' => 'Article permanently deleted successfully',
-        ]);
+        ], 202);
+    } catch (\Exception $e) {
+        return response()->json([
+            'code' => 500,
+            'message' => 'An error occurred while deleting the article',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 }
