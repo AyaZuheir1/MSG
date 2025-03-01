@@ -15,16 +15,16 @@ class FirebaseServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton('firebase', function ($app) {
-            $serviceAccountPath = storage_path('app/medsg-85fd8-881fafdc81d6.json');
+            $serviceAccountPath = storage_path('app/medsg-85fd8-firebase-adminsdk-6dvwn-789bbc02c8.json');
 
             if (!file_exists($serviceAccountPath)) {
                 throw new \Exception('Firebase Admin SDK JSON file not found: ' . $serviceAccountPath);
             }
 
             return (new Factory)
-                ->withServiceAccount($serviceAccountPath);
-                // ->withDatabaseUri('https://your-database-name.firebaseio.com'); // Replace with your database URI if applicable
-        });
+                ->withServiceAccount($serviceAccountPath)
+        ->withDatabaseUri(config('firebase.database_url'));
+    });
 
         $this->app->singleton('firebase.messaging', function ($app) {
             $firebase = app('firebase');

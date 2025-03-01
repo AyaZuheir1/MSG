@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\FCMController;
 use App\Notifications\DoctorAccountActivate;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 // use App\Http\Controllers\API\DoctorAccountActivate;
 
@@ -47,9 +48,9 @@ class AdminController extends Controller
         $doctor = null;
         if ($doctorRequest->status === 'pending') {
             $user = User::create([
-                'username' => strtolower($doctorRequest->first_name . $doctorRequest->last_name),
+                'username' => strtolower($doctorRequest->first_name . " " . $doctorRequest->last_name),
                 'email' => $doctorRequest->email,
-                'password' => bcrypt('defaultpassword'),
+                'password' => $doctorRequest->password,
                 'role' => 'doctor',
                 'fcm_token' => $request->token,
             ]);
@@ -104,8 +105,8 @@ class AdminController extends Controller
             $deviceToken =$request->token;
             $title = "Your request has been rejected";
             $body = "Sorry, your request has been rejected";
-            // return $body;
             $notifyStatus =  $fcmController->sendNotification($request, $deviceToken, $title, $body);
+            // return $body;
 
             return response()->json([
                 'code' => 200,

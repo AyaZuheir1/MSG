@@ -2,9 +2,9 @@
 
 return [
 
-    'providers' => [
-        App\Providers\AuthServiceProvider::class,
-    ],
+    // 'providers' => [
+    //     App\Providers\AuthServiceProvider::class,
+    // ],
     /*
     |--------------------------------------------------------------------------
     | Application Name

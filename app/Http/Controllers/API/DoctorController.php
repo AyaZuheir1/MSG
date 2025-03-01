@@ -9,10 +9,16 @@ use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\DoctorFileController;
+use App\Services\SupabaseStorageService;
+use Exception;
+use Illuminate\Foundation\Exceptions\Renderer\Exception as RendererException;
+use Kreait\Firebase\Factory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\Middleware;
+use Supabase\SupabaseClient;
 
 class DoctorController extends Controller
 {
@@ -22,10 +28,18 @@ class DoctorController extends Controller
             new Middleware('auth:sanctum', except: ['register'])
         ];
     }
+    protected $supabaseStorage;
+
+    public function __construct(SupabaseStorageService $supabaseStorage)
+    {
+        $this->supabaseStorage = $supabaseStorage;
+    }
+
     public function profile(Request $request)
     {
         $doctor =  Doctor::findOrFail($request->user()->id);
-        return response()->json([
+        return response()->json(
+            [
                 'doctor' => $doctor
             ]
         );
@@ -43,13 +57,12 @@ class DoctorController extends Controller
             'phone_number' => 'required|string|max:20',
             'gender' => 'required|in:male,female',
             'major' => 'required|string|max:255',
-            'certificate' => 'required|file|mimes:pdf,jpeg,png,jpg',
+            'certificate' => 'required|file|mimes:pdf,jpeg,png,jpg|max:2048',
         ]);
 
         DB::beginTransaction();
         try {
             $existingRequest = DoctorRequest::where('email', $validatedData['email'])->first();
-// return $existingRequest;
             if ($existingRequest) {
                 if ($existingRequest->status === 'rejected') {
                     $existingRequest->delete();
@@ -59,10 +72,16 @@ class DoctorController extends Controller
             }
 
             $certificatePath = null;
-            if ($request->hasFile('certificate')) {
-                $certificatePath = $request->file('certificate')->store('doctors/certificates', 'public');
-            }
-
+            // if ($request->hasFile('certificate')) {
+                $certificateFile = $request->file('certificate')->store('doctors/certificates', 'public');
+                $fileName = time() . '_' . $request->file('certificate')->getClientOriginalName();
+                $path = 'doctor_files/' . "$request->email/$fileName"; // Folder inside Supabase bucket
+                $result = $this->supabaseStorage->uploadFile($validatedData['certificate'], $path);
+                if(!$request){
+                    return new Exception('Could not upload certificate  file ' . $certificateFile);
+                }
+            
+// return $result;`
             DoctorRequest::create([
                 'first_name' => $validatedData['first_name'],
                 'last_name' => $validatedData['last_name'],
@@ -72,26 +91,17 @@ class DoctorController extends Controller
                 'phone_number' => $validatedData['phone_number'],
                 'gender' => $validatedData['gender'],
                 'major' => $validatedData['major'],
-                'certificate' => $certificatePath,
+                'certificate' => $result['file_url'],
                 'status' => 'pending',
             ]);
-
-            DB::commit();
+             DB::commit();
             return response()->json(['message' => 'Registration request submitted successfully!'], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Remove stored file if an error occurs
-            // if ($certificatePath) {
-            //     Storage::disk('public')->delete($certificatePath);
-            }
-//WHY????????????????????????????????????????????????????/
-return response()->json(['message' =>  $e->getMessage() ], 500);
-//WHY????????????????????????????????????????????????????/
         }
-    
-
-
+        return response()->json(['message' =>  $e->getMessage()], 500);
+    }
+   
     public function addSchedule(Request $request)
     {
         $validated = $request->validate([
@@ -141,14 +151,15 @@ return response()->json(['message' =>  $e->getMessage() ], 500);
             'date' => $validated['date'],
             'start_time' => $startTime24,
             'end_time' => $endTime24,
-            'status' => 'Available'
+            'status' => 'Available',
+            'period' => $request->period,
         ]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Schedule added successfully!',
             'appointment' => $appointment
-        ]);
+        ],201);
     }
 
 
@@ -244,47 +255,115 @@ return response()->json(['message' =>  $e->getMessage() ], 500);
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request)
-    {
-        $validatedData = $request->validate([
-            'first_name' => 'nullable|string|max:255',
-            'last_name' => 'nullable|string|max:255',
-            'major' => 'nullable|string|max:255',
-            'country' => 'nullable|string|max:255',
-            'phone_number' => 'nullable|string|max:20',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
-            'gender' => 'nullable|in:male,female',
-        ]);
+//     public function update(Request $request)
+//     {
+//         return $request;
+//         $validatedData = $request->validate([
+//             'first_name' => 'nullable|string|max:255',
+//             'last_name' => 'nullable|string|max:255',
+//             'major' => 'nullable|string|max:255',
+//             'country' => 'nullable|string|max:255',
+//             'phone_number' => 'nullable|string|max:20',
+//             'image' => 'nullable',
+//             'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
+//             'gender' => 'nullable|in:male,female',
+//         ]);
+// return $validatedData;
+// return $request->hasFile('image');
+//         $doctor = Doctor::where('user_id', Auth::id())->first();
+//         if ($request->hasFile('image')) {
+//             $image = $request->file('image');
+//             $imageName = time() . '_image.' . $image->getClientOriginalExtension();
+//             $image->storeAs('public/doctors/images', $imageName);
+//             $image->storeAs('public/doctors/images', $imageName);
 
-        $doctor = Doctor::where('user_id', Auth::id())->first();
+//             $certificatePath = null;
+//                 // $certificateFile = $request->file('certificate')->store('doctors/certificates', 'public');
+//                 $fileName = time() . '_' . $request->file('image')->getClientOriginalName();
+//                 $path = 'doctor_files/' . "$doctor->email/$fileName"; 
+//                 $result = $this->supabaseStorage->uploadFile($validatedData['image'], $path);
+//                 if(!$request){
+//                     return new Exception('Error while Uploading Doctor Image ' . $image);
+//             $validatedData['image'] = $imageName;
 
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = time() . '_image.' . $image->getClientOriginalExtension();
-            $image->storeAs('public/doctors/images', $imageName);
-            $validatedData['image'] = $imageName;
+//             if ($doctor->image) {
+//                 Storage::delete('public/doctors/images/' . $doctor->image);
+//             }
+//         }
 
-            if ($doctor->image) {
-                Storage::delete('public/doctors/images/' . $doctor->image);
-            }
+//         if ($request->hasFile('certificate')) {
+//             $certificate = $request->file('certificate');
+//             $certificateName = time() . '_certificate.' . $certificate->getClientOriginalExtension();
+//             $certificate->storeAs('public/doctors/certificates', $certificateName);
+//             $validatedData['certificate'] = $certificateName;
+
+//             if ($doctor->certificate) {
+//                 Storage::delete('public/doctors/certificates/' . $doctor->certificate);
+//             }
+//         }
+
+//         $doctor->update($validatedData);
+
+//         return response()->json(['message' => 'Doctor updated successfully!', 'doctor' => $doctor], 200);
+//     }
+// }
+public function update(Request $request)
+{
+    // Validate incoming request
+    $validatedData = $request->validate([
+        'first_name' => 'nullable|string|max:255',
+        'last_name' => 'nullable|string|max:255',
+        'major' => 'nullable|string|max:255',
+        'country' => 'nullable|string|max:255',
+        'phone_number' => 'nullable|string|max:20',
+        'image' => 'nullable|file|mimes:jpeg,png,jpg|max:2048', // Validate image file
+        'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Validate certificate file
+        'gender' => 'nullable|in:male,female',
+    ]);
+
+    // Fetch the doctor associated with the authenticated user
+    $doctor = Doctor::where('user_id', Auth::id())->first();
+    // return response()->json(['M' => $request]);
+    // Upload and store the image if present
+    if ($request->hasFile('image')) {
+        $image = $request->file('image');
+        $imageName = time() . '_image.' . $image->getClientOriginalExtension();
+        
+        // Store image in storage
+        $image->storeAs('public/doctors/images', $imageName);
+        
+        // If doctor has an old image, delete it
+        if ($doctor->image) {
+            Storage::delete('public/doctors/images/' . $doctor->image);
         }
 
-        if ($request->hasFile('certificate')) {
-            $certificate = $request->file('certificate');
-            $certificateName = time() . '_certificate.' . $certificate->getClientOriginalExtension();
-            $certificate->storeAs('public/doctors/certificates', $certificateName);
-            $validatedData['certificate'] = $certificateName;
-
-            if ($doctor->certificate) {
-                Storage::delete('public/doctors/certificates/' . $doctor->certificate);
-            }
-        }
-
-        $doctor->update($validatedData);
-
-        return response()->json(['message' => 'Doctor updated successfully!', 'doctor' => $doctor], 200);
+        // Store image file name in validated data
+        $validatedData['image'] = $imageName;
     }
+
+    // Upload and store the certificate if present
+    if ($request->hasFile('certificate')) {
+        $certificate = $request->file('certificate');
+        $certificateName = time() . '_certificate.' . $certificate->getClientOriginalExtension();
+        
+        // Store certificate in storage
+        $certificate->storeAs('public/doctors/certificates', $certificateName);
+        
+        // If doctor has an old certificate, delete it
+        if ($doctor->certificate) {
+            Storage::delete('public/doctors/certificates/' . $doctor->certificate);
+        }
+
+        // Store certificate file name in validated data
+        $validatedData['certificate'] = $certificateName;
+    }
+
+    // Update doctor with validated data
+    $doctor->update($validatedData);
+
+    // Return successful response
+    return response()->json(['message' => 'Doctor updated successfully!', 'doctor' => $doctor], 200);
+}
 
     public function searchDoctors(Request $request)
     {
@@ -324,6 +403,7 @@ return response()->json(['message' =>  $e->getMessage() ], 500);
             'date' => 'required|date|after_or_equal:today',
             'start_time' => 'required|date_format:h:i A',
             'end_time' => 'required|date_format:h:i A',
+            'period' => "required|string"
         ]);
 
         $appointment = Appointment::findOrFail($appointmentId);
@@ -382,6 +462,7 @@ return response()->json(['message' =>  $e->getMessage() ], 500);
             'date' => $validated['date'],
             'start_time' => $startTime24,
             'end_time' => $endTime24,
+            'period' => $validated['period'],
         ]);
 
         return response()->json([

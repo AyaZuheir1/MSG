@@ -10,11 +10,13 @@ use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\PatientController;
+use App\Http\Controllers\DoctorFileController;
+use Kreait\Firebase\Factory;
 
 Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
 Route::delete('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
 Route::middleware(['auth:sanctum'])->group(function () {
-    
+
     Route::apiResource('articles', ArticleController::class);
     Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
     // Route::put('articles/{id}', [ArticleController::class,'update']); // override to avoid Not Found error
@@ -71,3 +73,48 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 Route::post('/resendOtp', [AuthController::class, 'resendOtp']);
+
+
+
+Route::post('/doctor/upload-file', [DoctorFileController::class, 'upload']);
+Route::get('/doctor/{doctor_id}/files', [DoctorFileController::class, 'listFiles']);
+
+Route::get('/test-firebase', function () {
+    try {
+        // return config('firebase.project_id');
+        // return config('firebase.database_url');
+        // $firebaseCredentialsPath = storage_path('app/medsg-85fd8-firebase-adminsdk-6dvwn-789bbc02c8.json');
+
+        // if (!file_exists($firebaseCredentialsPath)) {
+        //     throw new Exception("Firebase credentials file is missing: $firebaseCredentialsPath");
+        // }
+        // $firebase = (new Factory)
+        // ->withServiceAccount(config('firebase.credentials'))
+        
+        $firebase = (new Factory)
+        ->withServiceAccount(storage_path('app/medsg-85fd8-firebase-adminsdk-6dvwn-789bbc02c8.json'))
+        ->withDatabaseUri(config('firebase.database_url'));
+
+        // $this->firebaseStorage = $firebase->createStorage();
+        $firebaseDatabase = $firebase->createDatabase();
+
+        $firebaseDatabase->getReference('doctors')->push([
+            "name" => "A",
+            "type" => "A",
+        ]);
+
+        $reference = $firebaseDatabase->getReference('doctor');
+        return response()->json($reference->getValue());
+        // return config('firebase.credentials');
+        // $firebase = (new Factory)
+        //     ->withServiceAccount(config('firebase.credentials'));
+        // ->withProjectId(env('FIREBASE_PROJECT_ID', 'medsg-85fd8'));
+
+        $auth = $firebase->createAuth();
+
+
+        return $firebase;
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});

@@ -10,8 +10,11 @@ class FCMController extends Controller
     public function sendNotification(Request $request,$deviceToken,$title,$body)
     {
         $messaging = app('firebase.messaging');
+        // ->withServiceAccount(storage_path('app/medsg-85fd8-firebase-adminsdk-6dvwn-789bbc02c8.json'))
+        // ->withProjectId(env('FIREBASE_PROJECT_ID', 'medsg-85fd8'));
         
         $deviceToken = 'paramaters';
+        
         // $deviceToken = $request->input('message.notification.token');
         // $title = $request->input('message.notification.title', 'Default Title');
         // $body = $request->input('message.notification.body', 'Default Body');

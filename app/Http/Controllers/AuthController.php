@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
+use PhpParser\Node\Stmt\Return_;
 
 class AuthController extends Controller
 {
@@ -26,29 +27,62 @@ class AuthController extends Controller
     //     ]);
     // }
     public function login(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|exists:users,email',
-            'password' => 'required',
-        ]);
-        $user = User::where('email', $request->email)->first();
+{
+    // Validate the request
+    $validated = $request->validate([
+        'email' => 'required|email|exists:users,email',
+        'password' => 'required',
+    ]);
+    // Retrieve user by email
+    $user = User::where('email', $request->email)->first();
+    // return " $request->password  ......... . $user->password";
+    // Check if user exists and the password matches
+    if ($user && ($request->password  === $user->password)) {
+        Auth::login($user);
 
-        if ($user && Hash::check($request->password, $user->password)) {
-            Auth::login($user);
-            $token = $user->createToken($user->username)->plainTextToken;
-
-            return response()->json([
-                'message' => 'Login successful.',
-                'token' => $token,
-                'user' => $user,
-            ], 200);
-        }
+        // Generate access token
+        $token = $user->createToken($user->email)->plainTextToken;
 
         return response()->json([
-            'code' => 302,
-            'message' => 'Invalid email or password.',
-        ], 302);
+            'message' => 'Login successful.',
+            'token' => $token,
+            'user' => $user,
+        ], 200);
     }
+
+    // If authentication fails
+    return response()->json([
+        'code' => 401,
+        'message' => 'Invalid email or password.',
+    ], 401);
+}
+
+    // public function login(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'email' => 'required|exists:users,email',
+    //         'password' => 'required',
+    //     ]);
+    //     $user = User::where('email', $request->email)->first();
+    //     // return $user->password . "  A   "  . Hash::make($request->password);
+    //     if ($user && Hash::check($request->password, $user->password)) {
+    // return "AAAAAAAAA";
+    //         Auth::login($user);
+    
+    //         $token = $user->createToken($user->username)->plainTextToken;
+
+    //         return response()->json([
+    //             'message' => 'Login successful.',
+    //             'token' => $token,
+    //             'user' => $user,
+    //         ], 200);
+    //     }
+
+    //     return response()->json([
+    //         'code' => 302,
+    //         'message' => 'Invalid email or password.',
+    //     ], 302);
+    // }
 
     public function logout(Request $request)
     {
