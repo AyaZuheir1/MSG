@@ -27,21 +27,25 @@ class AuthController extends Controller
     //     ]);
     // }
     public function login(Request $request)
-{
-    // Validate the request
-    $validated = $request->validate([
-        'email' => 'required|email|exists:users,email',
-        'password' => 'required',
-    ]);
-    // Retrieve user by email
-    $user = User::where('email', $request->email)->first();
-    // return " $request->password  ......... . $user->password";
-    // Check if user exists and the password matches
-    if ($user && ($request->password  === $user->password)) {
-        Auth::login($user);
+    {
+        $validated = $request->validate([
+            'email' => 'required|exists:users,email',
+            'password' => 'required',
+        ]);
 
-        // Generate access token
-        $token = $user->createToken($user->email)->plainTextToken;
+        $user = User::where('email', $request->email)->first();
+
+        if ($user && Hash::check($request->password, $user->password)) {
+            Auth::login($user);
+            $token = $user->createToken($user->username)->plainTextToken;
+            $userole = null;
+            if ($user->role === 'patient') {
+                $userole = $user->patient;
+            }
+
+            if ($user->role === 'doctor') {
+                $userole = $user->doctor;
+            }
 
         return response()->json([
             'message' => 'Login successful.',

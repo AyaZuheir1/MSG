@@ -69,6 +69,8 @@ Route::post('/select-role', [AuthController::class, 'selectRole']);
 Route::post('/patient/register', [PatientController::class, 'register']);
 Route::post('/doctor/register', [DoctorController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/patient/login', [AuthController::class, 'login']);
+Route::post('/doctor/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
