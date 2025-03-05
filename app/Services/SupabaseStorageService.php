@@ -33,7 +33,6 @@ class SupabaseStorageService
         $filePath = "$path/$fileName";
         
         try {
-            // return "{$this->url}/upload/{$this->bucket}/$filePath";
             $response = $this->client->request('POST', "{$this->url}/{$this->bucket}/$filePath", [
                 'headers' => [
                     'Authorization' => "Bearer {$this->anonKey}",
@@ -42,7 +41,6 @@ class SupabaseStorageService
                 ],
                 'body' => fopen($file->getPathname(), 'r'),
             ]);
-            // return "upload" .$filePath;
             
             return [
                 'file_name' => $fileName,

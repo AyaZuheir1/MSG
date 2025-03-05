@@ -109,7 +109,7 @@ class AdminController extends Controller
         }
         DB::beginTransaction();
         try {
-            $doctorRequest->update(['status' => 'rejected']);
+            // $doctorRequest->update(['status' => 'rejected']);
             DB::commit();
 
             $deviceToken = $request->token ?? null;

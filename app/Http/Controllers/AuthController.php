@@ -7,25 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Session;
-use PhpParser\Node\Stmt\Return_;
 
 class AuthController extends Controller
 {
-    // public function selectRole(Request $request)
-    // {
-    //     $validatedData = $request->validate([
-    //         'role' => 'required|in:doctor,patient',
-    //     ]);
-
-    //     $redirectPage = $validatedData['role'] === 'doctor' ? '/doctor/splash' : '/patient/splash';
-
-    //     return response()->json([
-    //         'message' => 'Role selected successfully!',
-    //         'role' => $validatedData['role'],
-    //         'redirect_to' => $redirectPage,
-    //     ]);
-    // }
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -47,19 +31,19 @@ class AuthController extends Controller
                 $userole = $user->doctor;
             }
 
-        return response()->json([
-            'message' => 'Login successful.',
-            'token' => $token,
-            'user' => $user,
-        ], 200);
-    }
+            return response()->json([
+                'message' => 'Login successful.',
+                'token' => $token,
+                'user' => $user,
+            ], 200);
+        }
 
-    // If authentication fails
-    return response()->json([
-        'code' => 401,
-        'message' => 'Invalid email or password.',
-    ], 401);
-}
+        // If authentication fails
+        return response()->json([
+            'code' => 401,
+            'message' => 'Invalid email or password.',
+        ], 401);
+    }
 
     // public function login(Request $request)
     // {
@@ -72,7 +56,7 @@ class AuthController extends Controller
     //     if ($user && Hash::check($request->password, $user->password)) {
     // return "AAAAAAAAA";
     //         Auth::login($user);
-    
+
     //         $token = $user->createToken($user->username)->plainTextToken;
 
     //         return response()->json([
@@ -97,7 +81,6 @@ class AuthController extends Controller
         ]);
     }
 
-
     public function forgotPassword(Request $request)
     {
         $request->validate(['email' => 'required|email|exists:users,email']);
@@ -121,49 +104,44 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'The code has been sent to your email.']);
     }
-
     public function verifyOtp(Request $request)
     {
         $request->validate([
             'email' => 'required|email|exists:users,email',
             'otp' => 'required|numeric',
         ]);
-    
+
         $user = User::where('email', $request->email)->first();
-    
+
         if (!$user || $user->otp_code !== $request->otp) {
             return response()->json(['message' => 'Invalid OTP'], 400);
         }
-    
+
         $user->otp_code = null;
         $user->save();
-    
+
         return response()->json([
             'message' => 'OTP verified successfully',
-            'redirect_to' => '/api/reset-password', 
-       ], 200);
+            'redirect_to' => '/api/reset-password',
+        ], 200);
     }
-    
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'password' => 'required|min:8|confirmed',
+        ]);
 
+        $user = User::where('email', $request->email)->first();
 
-public function resetPassword(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|exists:users,email',
-        'password' => 'required|min:8|confirmed',
-    ]);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+        $user->password = Hash::make($request->password);
+        $user->save();
 
-    $user = User::where('email', $request->email)->first();
-
-    if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
+        return response()->json(['message' => 'Password reset successfully!'], 200);
     }
-    $user->password = Hash::make($request->password);
-    $user->save();
-
-    return response()->json(['message' => 'Password reset successfully!'], 200);
-}
-
     public function resendOtp(Request $request)
     {
         $request->validate([
