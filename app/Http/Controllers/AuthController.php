@@ -24,11 +24,61 @@ class AuthController extends Controller
             $token = $user->createToken($user->username)->plainTextToken;
             $userole = null;
             if ($user->role === 'patient') {
-                $userole = $user->patient;
+                $patient = $user->patient;
+                return response()->json([
+                    'message' => 'Login successful.',
+                    'token' => $token,
+                    'patient' => [
+                        'id' => $patient->id,
+                        'user_id' => $patient->user_id,
+                        'first_name' => $patient->first_name,
+                        'last_name' => $patient->last_name,
+                        'email' => $user->email, // الإيميل داخل المريض
+                        'age' => $patient->age,
+                        'gender' => $patient->gender,
+                        'phone_number' => $patient->phone_number,
+                        'address' => $patient->address,
+                    ],
+                ],200);
             }
 
             if ($user->role === 'doctor') {
-                $userole = $user->doctor;
+                $doctor = $user->doctor;
+                return response()->json([
+                    'message' => 'Login successful.',
+                    'token' => $token,
+                    'doctor' => [
+                        'id' => $doctor->id,
+                        'user_id' => $doctor->user_id,
+                        'first_name' => $doctor->first_name,
+                        'last_name' => $doctor->last_name,
+                        'email' => $user->email,
+                        'major' => $doctor->major,
+                        'country' => $doctor->country,
+                        'phone_number'    => $doctor->phone_number,
+                        'average_rating'  => $doctor->average_rating,
+                        'image'           => asset("storage/{$doctor->image}"),
+                        'certificate'     => asset("storage/{$doctor->certificate}"),
+                        'gender'          => $doctor->gender,
+                    ],
+                ],200);
+            }
+            if ($user->role === 'admin') {
+                $admin = $user->admin;
+                return response()->json([
+                    'message' => 'Login successful.',
+                    'token' => $token,
+                    'admin' => [
+                        'id' => $admin->id,
+                        'user_id' => $admin->user_id,
+                        'first_name' => $admin->first_name,
+                        'last_name' => $admin->last_name,
+                        'email' => $user->email,
+                        'number' => $admin->number,
+                        'job_title' => $admin->job_title,
+                    ],
+
+                ] ,200 );
             }
 
             return response()->json([
@@ -38,12 +88,12 @@ class AuthController extends Controller
             ], 200);
         }
 
-        // If authentication fails
         return response()->json([
-            'code' => 401,
+            'code' => 302,
             'message' => 'Invalid email or password.',
-        ], 401);
+        ], 302);
     }
+
 
     // public function login(Request $request)
     // {
@@ -167,3 +217,5 @@ class AuthController extends Controller
         return response()->json(['message' => 'OTP sent successfully']);
     }
 }
+
+

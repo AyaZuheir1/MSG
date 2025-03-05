@@ -121,4 +121,15 @@ class ChatController extends Controller
             
         return response()->json(['messages' => $messages]);
     }
+    public function download($filename) {
+        if (strpos($filename, '..') !== false) {
+            abort(403, "Access Denied");
+        }
+            $path = storage_path("app/public/chat_files/{$filename}");
+    
+        if (!file_exists($path)) {
+            abort(404, "File not found");
+        }
+            return response()->download($path);
+    }
 }

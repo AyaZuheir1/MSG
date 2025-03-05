@@ -4,9 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\API\ChatController;
 use App\Http\Controllers\API\AdminController;
-use App\Http\Controllers\Api\DoctorController;
-use App\Http\Controllers\Api\ArticleController;
-use App\Http\Controllers\Api\PatientController;
+use App\Http\Controllers\API\DoctorController;
+use App\Http\Controllers\API\ArticleController;
+use App\Http\Controllers\API\PatientController;
 
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -18,6 +18,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
     Route::delete('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
     // Route::put('articles/{id}', [ArticleController::class,'update']); // override to avoid Not Found error
+    Route::get('/download/{filename}', [ChatController::class, 'download']);
+
     Route::get('/articles/search', [ArticleController::class, 'search']);
 
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
