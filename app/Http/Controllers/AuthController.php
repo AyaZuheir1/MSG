@@ -12,8 +12,8 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|exists:users,email',
+        $request->validate([
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
@@ -22,7 +22,6 @@ class AuthController extends Controller
         if ($user && Hash::check($request->password, $user->password)) {
             Auth::login($user);
             $token = $user->createToken($user->username)->plainTextToken;
-            $userole = null;
             if ($user->role === 'patient') {
                 $patient = $user->patient;
                 return response()->json([
