@@ -115,8 +115,9 @@ return $user;
 
     public function rateService(Request $request)
     {
+        // return $request;
+        // return auth::user();
         if (auth::user()->role !== 'patient') {
-
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $validatedData = $request->validate([
@@ -179,7 +180,7 @@ return $user;
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request)
     {
         $validated = $request->validate([
             'first_name' => 'nullable|string|max:255',
@@ -265,6 +266,6 @@ return $user;
             'status' => 'Available',
         ]);
 
-        return response()->json(['message' => 'Appointment canceled successfully!']);
+        return response()->json(['message' => 'Appointment canceled successfully!'],200);
     }
 }

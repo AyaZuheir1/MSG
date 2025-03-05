@@ -14,11 +14,12 @@ use App\Http\Controllers\DoctorFileController;
 use Kreait\Firebase\Factory;
 
 Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
-Route::delete('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
 Route::middleware(['auth:sanctum'])->group(function () {
-
+    
     Route::apiResource('articles', ArticleController::class);
+    Route::post('/articles/{article}', [ArticleController::class, 'update']);
     Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
+    Route::delete('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
     // Route::put('articles/{id}', [ArticleController::class,'update']); // override to avoid Not Found error
     Route::get('/articles/search', [ArticleController::class, 'search']);
     // Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
@@ -46,7 +47,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Doctor Routes
     Route::prefix('doctor')->group(function () {
         Route::get('/profile', [DoctorController::class, 'profile']);
-        Route::put('/update-profile', [DoctorController::class, 'update']);
+        Route::post('/update-profile', [DoctorController::class, 'update']);
 
         // Doctor Appointments
         Route::post('/schedule', [DoctorController::class, 'addSchedule']);
@@ -69,8 +70,7 @@ Route::post('/select-role', [AuthController::class, 'selectRole']);
 Route::post('/patient/register', [PatientController::class, 'register']);
 Route::post('/doctor/register', [DoctorController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/patient/login', [AuthController::class, 'login']);
-Route::post('/doctor/login', [AuthController::class, 'login']);
+
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');

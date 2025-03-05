@@ -9,18 +9,16 @@ use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FCMController;
-use App\Notifications\DoctorAccountActivate;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-
-// use App\Http\Controllers\API\DoctorAccountActivate;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\JsonResponse;
+use Exception;
 
 class AdminController extends Controller
 {
     public function getDoctorRequests(Request $request)
     {
-        if(!(Auth::user()->role == 'admin')) {
-            abort(403, 'You are not authorized.');
+        if (!Gate::allows('manage-doctor-requests')) {
+            abort(403, 'Unauthorized action.');
         }
         $status = $request->query('status');
         if ($status) {
@@ -39,20 +37,30 @@ class AdminController extends Controller
         ], 200);
     }
 
-    public function approveDoctorRequest(Request $request, $id)
+    public function approveDoctorRequest(Request $request, $id, FCMController $fcmController): JsonResponse
     {
-        if(!(Auth::user()->role == 'admin')) {
-            abort(403, 'You are not authorized.');
+        if (!Gate::allows('manage-doctor-requests')) {
+            return response()->json(['error' => 'Unauthorized action.'], 403);
         }
+
         $doctorRequest = DoctorRequest::findOrFail($id);
-        $doctor = null;
-        if ($doctorRequest->status === 'pending') {
+
+        if ($doctorRequest->status !== 'pending') {
+            return response()->json(['message' => 'Request already processed!'], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            if (User::where('email', $doctorRequest->email)->exists()) {
+                return response()->json(['error' => 'User with this email already exists.'], 409);
+            }
+
             $user = User::create([
                 'username' => strtolower($doctorRequest->first_name . " " . $doctorRequest->last_name),
                 'email' => $doctorRequest->email,
                 'password' => $doctorRequest->password,
                 'role' => 'doctor',
-                'fcm_token' => $request->token,
+                'fcm_token' => $request->token, //
             ]);
 
             $doctor = Doctor::create([
@@ -67,57 +75,62 @@ class AdminController extends Controller
                 'certificate' => $doctorRequest->certificate,
             ]);
 
-            // تحديث حالة الطلب
             $doctorRequest->update(['status' => 'approved']);
-            $fcmController = new FCMController();
-            // return "Pending";
-            $deviceToken = "1|V5JSddLZlMu7FaXrEaK9Hv3A8Hva59iPveSG7YkQ0542bb6f";
-            $title = "Your request has been approved";
-            $body = "Congratulations! YOU ARE A DOCTOR IN MEDSUPPORTGAZA";
-            // return $body;
-            $notifyStatus =  $fcmController->sendNotification($request, $deviceToken, $title, $body);
-            // $doctor->notify(new DoctorAccountActivate());
 
-            // $user->notify(new DoctorAccountActivate);
+            DB::commit();
+
+            $deviceToken =   "aaaa"; //$user->fcm_token; // Using the newly created user’s FCM token
+            $title = "Your request has been approved";
+            $body = "Congratulations! you are a doctor in MEDSUPPORTGAZA";
+
+            $notifyStatus = $fcmController->sendNotification($request, $deviceToken, $title, $body);
+
             return response()->json([
                 'message' => 'Doctor approved successfully!',
-                'status' => $notifyStatus,
-            ]);
+                'notification_status' => $notifyStatus,
+            ], 201);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Something went wrong while approving the doctor request.',
+                'details' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json(['message' => 'Request already processed!'], 400);
     }
-
-
-    public function rejectDoctorRequest(Request $request, $id)
+    public function rejectDoctorRequest(Request $request, FCMController $fcmController, $id): JsonResponse
     {
-        // return !($request->user()->role == 'admin');
-        if(!(Auth::user()->role == 'admin')) {
-            abort(403, 'You are not authorized.');
+        if (!Gate::allows('manage-doctor-requests')) {
+            return response()->json(['error' => 'Unauthorized action.'], 403);
         }
+
         $doctorRequest = DoctorRequest::findOrFail($id);
-
-        if ($doctorRequest->status === 'pending') {
+        if ($doctorRequest->status !== 'pending') {
+            return response()->json(['message' => 'Request already processed!'], 400);
+        }
+        DB::beginTransaction();
+        try {
             $doctorRequest->update(['status' => 'rejected']);
+            DB::commit();
 
-            $fcmController = new FCMController();
-            // return "Pending";
-            $deviceToken =$request->token;
-            $title = "Your request has been rejected";
-            $body = "Sorry, your request has been rejected";
-            $notifyStatus =  $fcmController->sendNotification($request, $deviceToken, $title, $body);
-            // return $body;
+            $deviceToken = $request->token ?? null;
+            if ($deviceToken) {
+                $title = "Your request has been rejected";
+                $body = "Sorry, your request has been rejected \n Good Luck !";
+                $notifyStatus = $fcmController->sendNotification($request, $deviceToken, $title, $body);
+            } else {
+                $notifyStatus = 'No FCM token provided';
+            }
 
             return response()->json([
-                'code' => 200,
                 'message' => 'Doctor request rejected successfully!',
-                'notify_status' =>$notifyStatus,
+                'notification_status' => $notifyStatus,
             ], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Something went wrong while rejecting the doctor request.',
+                'details' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'code' => 400,
-            'message' => 'Request already processed!'
-        ], 400);
     }
 }

@@ -29,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-article', function ($user) {
             return $user == 'admin';
         });
+        Gate::define('manage-schedule', function ($user) {
+        return $user == 'doctor';
+        });
         // Gate::define('delete-article', function (User $user, Article $article) {
         //     return $user->role === 'admin' && $article->admin_id === $user->id;
         // });

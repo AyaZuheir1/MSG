@@ -11,5 +11,11 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('manage-article', function ($user) {
             return $user->role == 'admin';
         });
+        Gate::define('manage-doctor-requests', function ($user) {
+            return $user->role == 'admin';
+        });
+        Gate::define('manage-schedule', function ($user) {
+            return $user->role == 'doctor';
+            });
     }
 }

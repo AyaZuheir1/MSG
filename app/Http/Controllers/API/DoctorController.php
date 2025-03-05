@@ -10,14 +10,14 @@ use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\DoctorFileController;
+use App\Models\User;
 use App\Services\SupabaseStorageService;
 use Exception;
-use Illuminate\Foundation\Exceptions\Renderer\Exception as RendererException;
-use Kreait\Firebase\Factory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Gate;
 use Supabase\SupabaseClient;
 
 class DoctorController extends Controller
@@ -75,7 +75,7 @@ class DoctorController extends Controller
             // if ($request->hasFile('certificate')) {
                 $certificateFile = $request->file('certificate')->store('doctors/certificates', 'public');
                 $fileName = time() . '_' . $request->file('certificate')->getClientOriginalName();
-                $path = 'doctor_files/' . "$request->email/$fileName"; // Folder inside Supabase bucket
+                $path = 'doctor_images/' . "$request->email"; // Folder inside Supabase bucket
                 $result = $this->supabaseStorage->uploadFile($validatedData['certificate'], $path);
                 if(!$request){
                     return new Exception('Could not upload certificate  file ' . $certificateFile);
@@ -104,6 +104,9 @@ class DoctorController extends Controller
    
     public function addSchedule(Request $request)
     {
+        if (!Gate::allows('manage-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $validated = $request->validate([
             'date' => 'required|date|after_or_equal:today',
             'start_time' => 'required|date_format:h:i A',
@@ -185,6 +188,9 @@ class DoctorController extends Controller
 
     public function myAppointments(Request $request)
     {
+        if (!Gate::allows('manage-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $doctorId = Auth::user()->doctor->id;
         $status = $request->query('status', 'all');
         $appointments = Appointment::where('doctor_id', $doctorId)
@@ -207,9 +213,10 @@ class DoctorController extends Controller
      */
     public function deleteAppointment($id)
     {
-
+        if (!Gate::allows('manage-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $appointment = Appointment::findOrFail($id);
-
         if (auth::user()->role !== 'doctor') {
             return response()->json(['message' => 'Unauthorized. User is not a doctor.'], 403);
         }
@@ -309,6 +316,8 @@ class DoctorController extends Controller
 // }
 public function update(Request $request)
 {
+    // return "kkkkkk";
+    // return ($request->all());
     // Validate incoming request
     $validatedData = $request->validate([
         'first_name' => 'nullable|string|max:255',
@@ -316,29 +325,37 @@ public function update(Request $request)
         'major' => 'nullable|string|max:255',
         'country' => 'nullable|string|max:255',
         'phone_number' => 'nullable|string|max:20',
-        'image' => 'nullable|file|mimes:jpeg,png,jpg|max:2048', // Validate image file
+        'image' => 'required|file|mimes:jpeg,png,jpg|max:2048', // Validate image file
         'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Validate certificate file
         'gender' => 'nullable|in:male,female',
     ]);
 
     // Fetch the doctor associated with the authenticated user
     $doctor = Doctor::where('user_id', Auth::id())->first();
-    // return response()->json(['M' => $request]);
-    // Upload and store the image if present
+    $user = User::findOrFail($doctor->user_id);    // Upload and store the image if present
     if ($request->hasFile('image')) {
         $image = $request->file('image');
         $imageName = time() . '_image.' . $image->getClientOriginalExtension();
-        
         // Store image in storage
         $image->storeAs('public/doctors/images', $imageName);
-        
+
+        $certificatePath = null;
+        // if ($request->hasFile('certificate')) {
+            // $image = $request->file('image')->store('doctors/certificates', 'public');
+            $fileName = time() . '_' . $image->getClientOriginalName();
+            $path = 'doctor_images/' . "$user->email"; 
+            $result = $this->supabaseStorage->uploadFile($image, $path);
+            // return $result;
+            if(!$result){
+                return new Exception('Could not upload your image , try agian ' . $image);
+            }
         // If doctor has an old image, delete it
         if ($doctor->image) {
             Storage::delete('public/doctors/images/' . $doctor->image);
         }
 
         // Store image file name in validated data
-        $validatedData['image'] = $imageName;
+        $validatedData['image'] = $result['file_url'];
     }
 
     // Upload and store the certificate if present
@@ -347,22 +364,31 @@ public function update(Request $request)
         $certificateName = time() . '_certificate.' . $certificate->getClientOriginalExtension();
         
         // Store certificate in storage
-        $certificate->storeAs('public/doctors/certificates', $certificateName);
-        
+        // $certificate->storeAs('public/doctors/certificates', $certificateName);
+       
+        // $certificatePath = null;
+        // if ($request->hasFile('certificate')) {
+            $certificateFile = $request->file('certificate')->store('doctors/certificates', 'public');
+            $fileName = time() . '_' . $request->file('certificate')->getClientOriginalName();
+            $path = 'doctor_files/' . "$user->email"; 
+            $result = $this->supabaseStorage->uploadFile($validatedData['certificate'], $path);
+            if(!$request){
+                return new Exception('Could not upload certificate  file ' . $certificateFile);
+            }
         // If doctor has an old certificate, delete it
         if ($doctor->certificate) {
             Storage::delete('public/doctors/certificates/' . $doctor->certificate);
         }
 
         // Store certificate file name in validated data
-        $validatedData['certificate'] = $certificateName;
+        $validatedData['certificate'] = $result['file_url'];
     }
 
     // Update doctor with validated data
     $doctor->update($validatedData);
 
     // Return successful response
-    return response()->json(['message' => 'Doctor updated successfully!', 'doctor' => $doctor], 200);
+    return response()->json(['message' => 'Doctor updated successfully! HERE', 'doctor' => $doctor], 200);
 }
 
     public function searchDoctors(Request $request)
@@ -393,12 +419,11 @@ public function update(Request $request)
             'doctors' => $doctors
         ]);
     }
-
-
-
-
     public function updateSchedule(Request $request, $appointmentId)
     {
+        if (!Gate::allows('manage-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $validated = $request->validate([
             'date' => 'required|date|after_or_equal:today',
             'start_time' => 'required|date_format:h:i A',

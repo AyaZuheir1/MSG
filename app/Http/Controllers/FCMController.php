@@ -37,7 +37,6 @@ class FCMController extends Controller
             return 'success' ;
             return response()->json(['success' => true, 'message' => 'Notification sent successfully!']);
         } catch (\Throwable $e) {
-            // return 'fail';
             return response()->json(['error' => false, 'error' => $e->getMessage()], 500);
         }
     }
