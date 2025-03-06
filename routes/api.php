@@ -66,6 +66,8 @@ Route::middleware('auth:sanctum')->get('/get-messages/{appointmentId}', [ChatCon
 // Route::post('/select-role', [AuthController::class, 'selectRole']);
 Route::post('/patient/register', [PatientController::class, 'register']);
 Route::post('/doctor/register', [DoctorController::class, 'register']);
+Route::post('/patient/login', [AuthController::class, 'login']);
+Route::post('/doctor/login', [AuthController::class, 'login']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
