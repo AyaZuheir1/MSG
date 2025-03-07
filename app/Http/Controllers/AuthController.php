@@ -147,7 +147,7 @@ class AuthController extends Controller
         $user->save();
 
         Mail::raw("Your password reset code is: $otp. It will expire in 15 minutes.", function ($message) use ($user) {
-            $message->to($user->email)
+            $message->to($this->$user->email)
                 ->subject('Password Reset Code');
         });
 
@@ -162,11 +162,15 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || $user->otp_code !== $request->otp) {
+        if (!$user || intval($user->otp_code) !== intval($request->otp)) {
             return response()->json(['message' => 'Invalid OTP'], 400);
         }
-
+        if (!$user || intval($user->otp_code) !== intval($request->otp) || now()->greaterThan($user->otp_expires_at)) {
+            return response()->json(['message' => 'Invalid or expired OTP'], 400);
+        }
+        
         $user->otp_code = null;
+        $user->otp_expires_at = null;
         $user->save();
 
         return response()->json([

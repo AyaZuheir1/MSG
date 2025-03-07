@@ -100,7 +100,6 @@ class ChatController extends Controller
             return response()->json(['error' => 'Invalid user role.'], 403);
         }
     
-        // 🔥 2️⃣ التحقق مما إذا كان المستخدم جزءًا من الموعد
         $appointment = Appointment::where('id', $appointmentId)
             ->where(function ($query) use ($userId) {
                 $query->where('patient_id', $userId)
