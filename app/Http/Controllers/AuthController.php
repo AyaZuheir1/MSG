@@ -151,7 +151,7 @@ class AuthController extends Controller
         //     $message->to($this->$user->email)
         //         ->subject('Password Reset Code');
         // });
-Mail::to($this->$user->email)->send(new SendOtpMail($otp));
+Mail::to($user->email)->send(new SendOtpMail($otp));
         return response()->json(['message' => 'The code has been sent to your email.']);
     }
     public function verifyOtp(Request $request)
