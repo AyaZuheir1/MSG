@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Gate;
 
 class PatientController extends Controller
 {
@@ -40,18 +41,17 @@ class PatientController extends Controller
             'phone_number' => 'required|string|max:15',
             'address' => 'required|string|max:255',
         ]);
-        
-        // try {
-            // DB::beginTransaction();
-            
+
+        try {
+            DB::beginTransaction();
+
             $user = User::create([
                 'username' => "{$validatedData['first_name']} {$validatedData['last_name']}",
                 'email' => $validatedData['email'],
                 'password' => Hash::make($validatedData['password']),
                 'role' => 'patient',
             ]);
-            
-            // return "d";
+
             $patient = Patient::create([
                 'user_id' => $user->id,
                 'first_name' => $validatedData['first_name'],
@@ -64,18 +64,19 @@ class PatientController extends Controller
 
             $token = $user->createToken('AuthToken')->plainTextToken;
 
-            // DB::commit();
-return $user;
+            DB::commit();
+
             return response()->json([
                 'message' => 'Account created successfully.',
                 'user' => $user,
                 'patient' => $patient,
                 'token' => $token,
             ], 201);
-        // } catch (\Exception $e) {
-            // DB::rollBack();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json(['error' => 'Failed to create account.'], 500);
-        // }
+        }
     }
 
 
@@ -88,9 +89,8 @@ return $user;
     }
     public function rateDoctor(Request $request, $doctorId)
     {
-        if (auth::user()->role !== 'patient') {
-
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if (!Gate::allows('can-rate')) {
+            abort(403, 'Unauthorized action.');
         }
 
         $validatedData = $request->validate([
@@ -115,10 +115,8 @@ return $user;
 
     public function rateService(Request $request)
     {
-        // return $request;
-        // return auth::user();
-        if (auth::user()->role !== 'patient') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if (!Gate::allows('can-rate')) {
+            abort(403, 'Unauthorized action.');
         }
         $validatedData = $request->validate([
             'rate' => 'required|integer|min:1|max:5',
@@ -141,28 +139,30 @@ return $user;
 
     public function availableAppointments($doctorId)
     {
-        if (auth::user()->role !== 'patient') {
-
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
         }
 
         $appointments = Appointment::where('doctor_id', $doctorId)
             ->where('status', 'Available')
             ->get();
 
-        return response()->json($appointments);
+        return response()->json([
+            'appointments' => $appointments,
+        ]);
     }
 
     public function ShowAppointments($doctorId)
     {
-        if (auth::user()->role !== 'patient') {
-
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
         }
 
         $appointments = Appointment::where('doctor_id', $doctorId)->get();
 
-        return response()->json($appointments);
+        return response()->json([
+            'appointments' => $appointments
+        ]);
     }
     /**
      * Display the specified resource.
@@ -210,6 +210,9 @@ return $user;
 
     public function bookAppointment(Request $request, $id)
     {
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $appointment = Appointment::findOrFail($id);
         $patientId = Auth::user()->patient->id;
 
@@ -246,19 +249,24 @@ return $user;
 
     public function myAppointments()
     {
-
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $patientId = auth::user()->patient->id;
+
         $appointments = Appointment::where('patient_id', $patientId)->get();
 
         return response()->json($appointments);
     }
     public function cancelAppointment($id)
     {
-
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $appointment = Appointment::findOrFail($id);
 
         if ($appointment->patient_id !== auth::user()->patient->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Unauthorized action'], 403);
         }
 
         $appointment->update([
@@ -266,6 +274,6 @@ return $user;
             'status' => 'Available',
         ]);
 
-        return response()->json(['message' => 'Appointment canceled successfully!'],200);
+        return response()->json(['message' => 'Appointment canceled successfully!'], 200);
     }
 }

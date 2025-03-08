@@ -9,16 +9,13 @@ use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\DoctorFileController;
 use App\Models\User;
 use App\Services\SupabaseStorageService;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Gate;
-use Supabase\SupabaseClient;
 
 class DoctorController extends Controller
 {
@@ -38,11 +35,7 @@ class DoctorController extends Controller
     public function profile(Request $request)
     {
         $doctor =  Doctor::findOrFail($request->user()->id);
-        return response()->json(
-            [
-                'doctor' => $doctor
-            ]
-        );
+        return response()->json(['doctor' => $doctor]);
     }
 
 
@@ -70,18 +63,13 @@ class DoctorController extends Controller
                     return response()->json(['message' => 'A request with this email is already pending.'], 400);
                 }
             }
-
-            $certificatePath = null;
-            // if ($request->hasFile('certificate')) {
-            $certificateFile = $request->file('certificate')->store('doctors/certificates', 'public');
-            $fileName = time() . '_' . $request->file('certificate')->getClientOriginalName();
-            $path = 'doctor_images/' . "$request->email"; // Folder inside Supabase bucket
-            $result = $this->supabaseStorage->uploadFile($validatedData['certificate'], $path);
-            if (!$request) {
-                return new Exception('Could not upload certificate  file ' . $certificateFile);
+            $certificate = $request->file('certificate');
+            $supabasePath = 'doctor_files/' . "$request->email"; // Folder inside Supabase bucket
+            $supabaseResult = $this->supabaseStorage->uploadFile($certificate, $supabasePath);
+            if (!$supabaseResult) {
+                return new Exception('Could not upload certificate  file ' . $certificate);
             }
 
-            // return $result;`
             DoctorRequest::create([
                 'first_name' => $validatedData['first_name'],
                 'last_name' => $validatedData['last_name'],
@@ -91,7 +79,7 @@ class DoctorController extends Controller
                 'phone_number' => $validatedData['phone_number'],
                 'gender' => $validatedData['gender'],
                 'major' => $validatedData['major'],
-                'certificate' => $result['file_url'],
+                'certificate' => $supabaseResult['file_url'],
                 'status' => 'pending',
             ]);
             DB::commit();
@@ -99,9 +87,8 @@ class DoctorController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
         }
-        return response()->json(['message' =>  $e->getMessage()], 500);
+        return response()->json(['message' =>  $e->getMessage()]);
     }
-
     public function addSchedule(Request $request)
     {
         if (!Gate::allows('manage-schedule')) {
@@ -207,10 +194,6 @@ class DoctorController extends Controller
         ]);
     }
 
-
-    /**
-     * 
-     */
     public function deleteAppointment($id)
     {
         if (!Gate::allows('manage-schedule')) {
@@ -225,7 +208,6 @@ class DoctorController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // حذف الموعد
         $appointment->delete();
 
         return response()->json(['message' => 'Appointment deleted successfully!']);
@@ -236,15 +218,7 @@ class DoctorController extends Controller
     public function index()
     {
         $doctors = Doctor::all();
-        return response()->json($doctors);
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
+        return response()->json(['doctor' => $doctors,]);
     }
 
     /**
@@ -256,7 +230,7 @@ class DoctorController extends Controller
         if (!$doctor) {
             return response()->json(['message' => 'Doctor not found'], 404);
         }
-        return response()->json($doctor);
+        return response()->json(['doctor' => $doctor]);
     }
 
     /**
@@ -270,28 +244,28 @@ class DoctorController extends Controller
             'major' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
             'phone_number' => 'nullable|string|max:20',
-            'image' => 'required|file|mimes:jpeg,png,jpg|max:2048', 
+            'image' => 'required|file|mimes:jpeg,png,jpg|max:2048',
             'certificate' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
             'gender' => 'nullable|in:male,female',
         ]);
 
         $doctor = Doctor::where('user_id', Auth::id())->first();
-        $user = User::findOrFail($doctor->user_id);    
+        $user = User::findOrFail($doctor->user_id);
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = time() . '_image.' . $image->getClientOriginalExtension();
+            // $imageName = time() . '_image.' . $image->getClientOriginalExtension();
 
-            $image->storeAs('public/doctors/images', $imageName);
+            // $image->storeAs('public/doctors/images', $imageName);
 
             $supabasePath = 'doctor_images/' . "$user->email";
             $supabaseResult = $this->supabaseStorage->uploadFile($image, $supabasePath);
             if (!$supabaseResult) {
                 return new Exception('Could not upload your image , try agian ' . $image);
             }
-            // If doctor has an old image, delete it
-            if ($doctor->image) {
-                Storage::delete('public/doctors/images/' . $doctor->image);
-            }
+            // // If doctor has an old image, delete it
+            // if ($doctor->image) {
+            //     Storage::delete('public/doctors/images/' . $doctor->image);
+            // }
 
             $validatedData['image'] = $supabaseResult['file_url'];
         }
@@ -299,18 +273,18 @@ class DoctorController extends Controller
         if ($request->hasFile('certificate')) {
             $certificate = $request->file('certificate');
 
-            $certificateFile = $certificate->store('doctors/certificates', 'public');
+            // $certificateFile = $certificate->store('doctors/certificates', 'public');
 
             $supabasePath = 'doctor_files/' . "$user->email";
-            $supabaseResult = $this->supabaseStorage->uploadFile($validatedData['certificate'], $supabasePath);
-            
+            $supabaseResult = $this->supabaseStorage->uploadFile($certificate, $supabasePath);
+
             if (!$supabaseResult) {
-                return new Exception('Could not upload certificate  file ' . $certificateFile);
+                return new Exception('Could not upload certificate  file ' . $supabasePath);
             }
-            // If doctor has an old certificate, delete it
-            if ($doctor->certificate) {
-                Storage::delete('public/doctors/certificates/' . $doctor->certificate);
-            }
+            // // If doctor has an old certificate, delete it
+            // if ($doctor->certificate) {
+            //     Storage::delete('public/doctors/certificates/' . $doctor->certificate);
+            // }
 
             // Store certificate file name in validated data
             $validatedData['certificate'] = $supabaseResult['file_url'];

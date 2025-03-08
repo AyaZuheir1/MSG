@@ -47,7 +47,7 @@ class SupabaseStorageService
                 'file_url'  => env('SUPABASE_URL') . "/storage/v1/object/public/{$this->bucket}/$filePath",
             ];
         } catch (RequestException $e) {
-           return  $e->getResponse()->getBody()->getContents();
+           return  $e->getMessage();
         }
     }
     
