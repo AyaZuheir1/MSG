@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers\API;
 
+use Exception;
 use App\Models\User;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\FCMController;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Http\JsonResponse;
-use Exception;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\DoctorRequestStatusMail;
+use App\Http\Controllers\FCMController;
 
 class AdminController extends Controller
 {
@@ -84,6 +86,7 @@ class AdminController extends Controller
             $body = "Congratulations! you are a doctor in MEDSUPPORTGAZA";
 
             $notifyStatus = $fcmController->sendNotification($request, $deviceToken, $title, $body);
+            Mail::to($user->email)->send(new DoctorRequestStatusMail($doctor, 'accepted'));
 
             return response()->json([
                 'message' => 'Doctor approved successfully!',
@@ -127,6 +130,8 @@ class AdminController extends Controller
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
+            Mail::to($doctorRequest->email)->send(new DoctorRequestStatusMail($doctorRequest, 'rejected'));
+
             return response()->json([
                 'error' => 'Something went wrong while rejecting the doctor request.',
                 'details' => $e->getMessage(),

@@ -163,9 +163,7 @@ Mail::to($user->email)->send(new SendOtpMail($otp));
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || intval($user->otp_code) !== intval($request->otp)) {
-            return response()->json(['message' => 'Invalid OTP'], 400);
-        }
+        
         if (!$user || intval($user->otp_code) !== intval($request->otp) || now()->greaterThan($user->otp_expires_at)) {
             return response()->json(['message' => 'Invalid or expired OTP'], 400);
         }
