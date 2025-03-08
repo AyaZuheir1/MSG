@@ -7,7 +7,7 @@
 </head>
 <body>
     <h2>Reset Your Password</h2>
-    <p>Your reset code is: <strong>{{ $code }}</strong></p>
+    <p>Your reset code is: <strong>{{ $otp }}</strong></p>
     <p>Please use this code to reset your password.</p>
 </body>
 </html>

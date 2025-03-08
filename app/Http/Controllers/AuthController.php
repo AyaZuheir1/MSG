@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SendOtpMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -146,11 +147,11 @@ class AuthController extends Controller
         $user->otp_expires_at = $expiryTime;
         $user->save();
 
-        Mail::raw("Your password reset code is: $otp. It will expire in 15 minutes.", function ($message) use ($user) {
-            $message->to($this->$user->email)
-                ->subject('Password Reset Code');
-        });
-
+        // Mail::raw("Your password reset code is: $otp. It will expire in 15 minutes.", function ($message) use ($user) {
+        //     $message->to($this->$user->email)
+        //         ->subject('Password Reset Code');
+        // });
+Mail::to($this->$user->email)->send(new SendOtpMail($otp));
         return response()->json(['message' => 'The code has been sent to your email.']);
     }
     public function verifyOtp(Request $request)
