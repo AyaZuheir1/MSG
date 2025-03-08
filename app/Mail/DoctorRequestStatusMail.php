@@ -31,7 +31,7 @@ class DoctorRequestStatusMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Doctor Request has been $this->status'.ucfirst($this->status),
+            subject: 'Your Doctor Request has been '.ucfirst($this->status),
         );
 
        
