@@ -76,10 +76,16 @@ class DoctorController extends Controller
             $certificateFile = $request->file('certificate')->store('doctors/certificates', 'public');
             $fileName = time() . '_' . $request->file('certificate')->getClientOriginalName();
             $path = 'doctor_images/' . "$request->email"; // Folder inside Supabase bucket
-            $result = $this->supabaseStorage->uploadFile($validatedData['certificate'], $path);
+            $result = $this->supabaseStorage->uploadFile($certificateFile, $path);
+
+            // $result = $this->supabaseStorage->uploadFile($validatedData['certificate'], $path);
             if (!$request) {
                 return new Exception('Could not upload certificate  file ' . $certificateFile);
             }
+            if (!is_array($result) || !isset($result['file_url'])) {
+                return response()->json(['message' => 'Failed to upload certificate file.'], 500);
+            }
+            
 
             // return $result;`
             DoctorRequest::create([
