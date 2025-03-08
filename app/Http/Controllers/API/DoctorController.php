@@ -47,67 +47,60 @@ class DoctorController extends Controller
 
 
     public function register(Request $request)
-{
-    $validatedData = $request->validate([
-        'first_name' => 'required|string|max:255',
-        'last_name' => 'required|string|max:255',
-        'email' => 'required|email',
-        'password' => 'required|string|min:8|confirmed',
-        'country' => 'required|string|max:255',
-        'phone_number' => 'required|string|max:20',
-        'gender' => 'required|in:male,female',
-        'major' => 'required|string|max:255',
-        'certificate' => 'required|file|mimes:pdf,jpeg,png,jpg|max:2048',
-    ]);
-
-    DB::beginTransaction();
-    try {
-        $existingRequest = DoctorRequest::where('email', $validatedData['email'])->first();
-        if ($existingRequest) {
-            if ($existingRequest->status === 'rejected') {
-                $existingRequest->delete();
-            } else {
-                return response()->json(['message' => 'A request with this email is already pending.'], 400);
-            }
-        }
-
-        if (!$request->hasFile('certificate')) {
-            return response()->json(['message' => 'Certificate file is required.'], 400);
-        }
-
-        $certificateFile = $request->file('certificate');
-        $certificatePath = $certificateFile->store('doctors/certificates', 'public');
-
-        $fileName = time() . '_' . $certificateFile->getClientOriginalName();
-        $path = 'doctor_images/' . $validatedData['email'];
-        $result = $this->supabaseStorage->uploadFile($certificateFile, $path);
-
-        // ✅ تحقق مما تعيده `uploadFile()`
-        if (!is_array($result) || !isset($result['file_url'])) {
-            return response()->json(['message' => 'Failed to upload certificate file.'], 500);
-        }
-
-        DoctorRequest::create([
-            'first_name' => $validatedData['first_name'],
-            'last_name' => $validatedData['last_name'],
-            'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password']),
-            'country' => $validatedData['country'],
-            'phone_number' => $validatedData['phone_number'],
-            'gender' => $validatedData['gender'],
-            'major' => $validatedData['major'],
-            'certificate' => $result['file_url'],
-            'status' => 'pending',
+    {
+        $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'password' => 'required|string|min:8|confirmed',
+            'country' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:20',
+            'gender' => 'required|in:male,female',
+            'major' => 'required|string|max:255',
+            'certificate' => 'required|file|mimes:pdf,jpeg,png,jpg|max:5120',
         ]);
 
-        DB::commit();
-        return response()->json(['message' => 'Registration request submitted successfully!'], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json(['message' => $e->getMessage()], 500);
-    }
-}
+        DB::beginTransaction();
+        try {
+            $existingRequest = DoctorRequest::where('email', $validatedData['email'])->first();
+            if ($existingRequest) {
+                if ($existingRequest->status === 'rejected') {
+                    $existingRequest->delete();
+                } else {
+                    return response()->json(['message' => 'A request with this email is already pending.'], 400);
+                }
+            }
 
+            $certificatePath = null;
+            // if ($request->hasFile('certificate')) {
+            $certificateFile = $request->file('certificate')->store('doctors/certificates', 'public');
+            $fileName = time() . '_' . $request->file('certificate')->getClientOriginalName();
+            $path = 'doctor_images/' . "$request->email"; // Folder inside Supabase bucket
+            $result = $this->supabaseStorage->uploadFile($validatedData['certificate'], $path);
+            if (!$request) {
+                return new Exception('Could not upload certificate  file ' . $certificateFile);
+            }
+
+            // return $result;`
+            DoctorRequest::create([
+                'first_name' => $validatedData['first_name'],
+                'last_name' => $validatedData['last_name'],
+                'email' => $validatedData['email'],
+                'password' => Hash::make($validatedData['password']),
+                'country' => $validatedData['country'],
+                'phone_number' => $validatedData['phone_number'],
+                'gender' => $validatedData['gender'],
+                'major' => $validatedData['major'],
+                'certificate' => $result['file_url'],
+                'status' => 'pending',
+            ]);
+            DB::commit();
+            return response()->json(['message' => 'Registration request submitted successfully!'], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+        }
+        return response()->json(['message' =>  $e->getMessage()], 500);
+    }
 
     public function addSchedule(Request $request)
     {
