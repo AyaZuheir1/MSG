@@ -272,5 +272,6 @@ class PatientController extends Controller
         ]);
 
         return response()->json(['message' => 'Appointment canceled successfully!'], 200);
+        return response()->json(['message' => 'Appointment canceled successfully!'], 200);
     }
 }

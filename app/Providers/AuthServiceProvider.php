@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +17,12 @@ class AuthServiceProvider extends ServiceProvider
         });
         Gate::define('manage-schedule', function ($user) {
             return $user->role == 'doctor';
-            });
+        });
+        Gate::define('can-rate', function ($user) {
+            return $user->role == 'patient';
+        });
+        Gate::define('manage-their-schedule', function ($user) {
+            return $user->role == 'patient';
+        });
     }
 }

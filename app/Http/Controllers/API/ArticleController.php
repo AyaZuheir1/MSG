@@ -28,7 +28,8 @@ class ArticleController extends Controller
 
     public function index()
     {
-        $articles = Article::paginate(3);
+        $articles = Article::paginate(6);
+
         return response()->json([
             'code' => 200,
             'articles' => $articles
@@ -63,18 +64,18 @@ class ArticleController extends Controller
             $validated['published_at'] = now();
 
             $article = Article::create($validated);
-
+            
             if ($request->hasFile('image')) {
-
                 $image = $request->file('image');
-                $imageName = time() . '_image.' . $image->getClientOriginalExtension();
-                $image->storeAs('public/article/images', $imageName);
-                $path = 'article-images/' . "$article->id";
-                $result = $this->supabaseStorage->uploadFile($image, $path);
-                if (!$result) {
+                // $imageName = time() . '_image.' . $image->getClientOriginalExtension();
+                // $image->storeAs('public/article/images', $imageName);
+                $supabasePath = 'article-images/' . "$article->id";
+                $supabaseResult = $this->supabaseStorage->uploadFile($image, $supabasePath);
+                if (!$supabaseResult) {
                     new Exception('Could not upload your image , try agian ' . $image);
                 }
             }
+            $article->update(['image' => $supabaseResult['file_url']]);
 
             DB::commit();
 
@@ -84,10 +85,6 @@ class ArticleController extends Controller
             ], 201);
         } catch (Exception $e) {
             DB::rollBack();
-
-            if (!empty($validated['image'])) {
-                Storage::disk('public')->delete($validated['image']);
-            }
 
             return response()->json([
                 'error' => 'Something went wrong while publishing the article.',
@@ -153,14 +150,13 @@ class ArticleController extends Controller
         try {
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
+                // // Delete old image only if the new one is successfully uploaded
+                // if ($article->image) {
+                //     Storage::disk('public')->delete($article->image);
+                // }
 
-                // Delete old image only if the new one is successfully uploaded
-                if ($article->image) {
-                    Storage::disk('public')->delete($article->image);
-                }
-
-                $imagePath = $image->store('articles', 'public');
-                $validated['image'] = $imagePath;
+                // $imagePath = $image->store('articles', 'public');
+                // $validated['image'] = $imagePath;
 
                 $supabasePath = "article-images/{$article->id}";
                 $supabaseResult = $this->supabaseStorage->uploadFile($image, $supabasePath);
