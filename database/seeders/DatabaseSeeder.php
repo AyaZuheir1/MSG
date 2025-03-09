@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
         // ]);
         $user = User::create([
             'username' => 'Saja Herz',
-            'email' => 'herezsaja2020@gmail.com',
+            'email' => 'ayazuheir2@gmail.com',
             'password' => Hash::make('password123'), // تأكد من تغيير الباسورد لاحقًا
             'role' => 'doctor',
         ]);
