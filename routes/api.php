@@ -9,6 +9,8 @@ use App\Http\Controllers\API\ArticleController;
 use App\Http\Controllers\API\PatientController;
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/doctor/login', [AuthController::class, 'login']);
+Route::post('/patient/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     
@@ -46,7 +48,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('doctor')->group(function () {
         Route::get('/profile', [DoctorController::class, 'profile']);
         Route::post('/update-profile', [DoctorController::class, 'update']);
-        Route::post('/login', [AuthController::class, 'login'])->name('doctorLogin');
 
 
         // Doctor Appointments
