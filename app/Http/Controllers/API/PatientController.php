@@ -30,51 +30,56 @@ class PatientController extends Controller
     }
     public function register(Request $request)
     {
+        if (User::where('email', $request->email)->exists()) {
+            return response()->json([
+                'error' => 'This email is already registered.'
+            ], 401);
+        }
         $validatedData = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'required|email',
             'password' => 'required|string|confirmed',
             'age' => 'required|integer|min:1',
             'gender' => 'required|in:male,female',
             'phone_number' => 'required|string|max:15',
             'address' => 'required|string|max:255',
         ]);
-        
+
         // try {
-            // DB::beginTransaction();
-            
-            $user = User::create([
-                'username' => "{$validatedData['first_name']} {$validatedData['last_name']}",
-                'email' => $validatedData['email'],
-                'password' => Hash::make($validatedData['password']),
-                'role' => 'patient',
-            ]);
-            
-            // return "d";
-            $patient = Patient::create([
-                'user_id' => $user->id,
-                'first_name' => $validatedData['first_name'],
-                'last_name' => $validatedData['last_name'],
-                'age' => $validatedData['age'],
-                'gender' => $validatedData['gender'],
-                'phone_number' => $validatedData['phone_number'],
-                'address' => $validatedData['address'],
-            ]);
+        // DB::beginTransaction();
 
-            $token = $user->createToken('AuthToken')->plainTextToken;
+        $user = User::create([
+            'username' => "{$validatedData['first_name']} {$validatedData['last_name']}",
+            'email' => $validatedData['email'],
+            'password' => Hash::make($validatedData['password']),
+            'role' => 'patient',
+        ]);
 
-            // DB::commit();
-return $user;
-            return response()->json([
-                'message' => 'Account created successfully.',
-                'user' => $user,
-                'patient' => $patient,
-                'token' => $token,
-            ], 201);
+        // return "d";
+        $patient = Patient::create([
+            'user_id' => $user->id,
+            'first_name' => $validatedData['first_name'],
+            'last_name' => $validatedData['last_name'],
+            'age' => $validatedData['age'],
+            'gender' => $validatedData['gender'],
+            'phone_number' => $validatedData['phone_number'],
+            'address' => $validatedData['address'],
+        ]);
+
+        $token = $user->createToken('AuthToken')->plainTextToken;
+
+        // DB::commit();
+        return $user;
+        return response()->json([
+            'message' => 'Account created successfully.',
+            'user' => $user,
+            'patient' => $patient,
+            'token' => $token,
+        ], 201);
         // } catch (\Exception $e) {
-            // DB::rollBack();
-            return response()->json(['error' => 'Failed to create account.'], 500);
+        // DB::rollBack();
+        return response()->json(['error' => 'Failed to create account.'], 500);
         // }
     }
 
@@ -266,6 +271,6 @@ return $user;
             'status' => 'Available',
         ]);
 
-        return response()->json(['message' => 'Appointment canceled successfully!'],200);
+        return response()->json(['message' => 'Appointment canceled successfully!'], 200);
     }
 }

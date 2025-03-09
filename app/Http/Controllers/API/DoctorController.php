@@ -341,7 +341,7 @@ class DoctorController extends Controller
         $doctors = $query->get();
 
         if ($doctors->isEmpty()) {
-            return response()->json(['message' => 'No doctors found'], 404);
+            return response()->json(['message' => 'No doctors found'], 200);
         }
 
         return response()->json([

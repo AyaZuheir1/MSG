@@ -24,14 +24,21 @@
         <p>Congratulations! 🎉 Your request to join as a volunteer doctor on the <strong>mesSupport Gaza</strong> platform has been <strong>approved</strong>.</p>
         <p>You can now log in to your account and start offering consultations to patients in need. Please click the link below to log in:</p>
         <p style="text-align: center;">
-            <a href="{{ 'https://medsupport-gaza-cfd5c72a1744.herokuapp.com/api/doctor/login' }}" class="button">Login to Your Account</a>
+        <form action="{{ route('doctorLogin') }}" method="POST" style="text-align: center;">
+            @csrf
+            <button type="submit" class="button">Login to Your Account</button>
+        </form>
         </p>
     @else
         <p>We regret to inform you that your request to join as a volunteer doctor on the <strong>mesSupport Gaza</strong> platform has been <strong>rejected</strong>.</p>
         <p>We encourage you to apply again in the future. Please click the link below to submit a new application:</p>
         <p style="text-align: center;">
-            <a href="{{ 'https://medsupport-gaza-cfd5c72a1744.herokuapp.com/api/doctor/register' }}" class="button">Submit a New Application</a>
+         
         </p>
+        <form action="{{ route('requst') }}" method="POST" style="text-align: center;">
+            @csrf
+            <button type="submit" class="button">Submit a New Application</button>
+        </form>
     @endif
 
     <p>Thank you for your interest in supporting our community!<br>
