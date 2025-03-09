@@ -39,7 +39,7 @@ class AuthController extends Controller
                         'phone_number' => $patient->phone_number,
                         'address' => $patient->address,
                     ],
-                ],200);
+                ], 200);
             }
 
             if ($user->role === 'doctor') {
@@ -61,7 +61,7 @@ class AuthController extends Controller
                         'certificate'     => asset("storage/{$doctor->certificate}"),
                         'gender'          => $doctor->gender,
                     ],
-                ],200);
+                ], 200);
             }
             if ($user->role === 'admin') {
                 $admin = $user->admin;
@@ -78,7 +78,7 @@ class AuthController extends Controller
                         'job_title' => $admin->job_title,
                     ],
 
-                ] ,200 );
+                ], 200);
             }
 
             return response()->json([
@@ -151,7 +151,7 @@ class AuthController extends Controller
         //     $message->to($this->$user->email)
         //         ->subject('Password Reset Code');
         // });
-Mail::to($user->email)->send(new SendOtpMail($otp));
+        Mail::to($user->email)->send(new SendOtpMail($otp));
         return response()->json(['message' => 'The code has been sent to your email.']);
     }
     public function verifyOtp(Request $request)
@@ -163,11 +163,11 @@ Mail::to($user->email)->send(new SendOtpMail($otp));
 
         $user = User::where('email', $request->email)->first();
 
-        
+
         if (!$user || intval($user->otp_code) !== intval($request->otp) || now()->greaterThan($user->otp_expires_at)) {
             return response()->json(['message' => 'Invalid or expired OTP'], 400);
         }
-        
+
         $user->otp_code = null;
         $user->otp_expires_at = null;
         $user->save();
@@ -211,13 +211,11 @@ Mail::to($user->email)->send(new SendOtpMail($otp));
         $user->otp_expires_at = now()->addMinutes(15);
         $user->save();
 
-        // Mail::to($user->email)->send(new SendOtpMail($otp));
-        Mail::raw("Your password reset code is: $otp. It will expire in 15 minutes.", function ($message) use ($user) {
-            $message->to($user->email)
-                ->subject('Password Reset Code');
-        });
+        Mail::to($user->email)->send(new SendOtpMail($otp));
+        // Mail::raw("Your password reset code is: $otp. It will expire in 15 minutes.", function ($message) use ($user) {
+        //     $message->to($user->email)
+        //         ->subject('Password Reset Code');
+        // });
         return response()->json(['message' => 'OTP sent successfully']);
     }
 }
-
-
