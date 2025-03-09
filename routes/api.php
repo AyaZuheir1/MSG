@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/profile', [DoctorController::class, 'profile']);
         Route::post('/update-profile', [DoctorController::class, 'update']);
         Route::post('/login', [AuthController::class, 'login'])->name('doctorLogin');
+        Route::get('/login', [AuthController::class, 'login']);
 
 
         // Doctor Appointments
@@ -68,6 +69,7 @@ Route::middleware('auth:sanctum')->get('/get-messages/{appointmentId}', [ChatCon
 // Route::post('/select-role', [AuthController::class, 'selectRole']);
 Route::post('/patient/register', [PatientController::class, 'register']);
 Route::post('/doctor/register', [DoctorController::class, 'register'])->name('requst');
+Route::get('/doctor/register', [DoctorController::class, 'register'])->name('requst');
 Route::post('/patient/login', [AuthController::class, 'login']);
 Route::post('/login', [AuthController::class, 'login']);
 
