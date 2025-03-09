@@ -46,8 +46,8 @@ class PatientController extends Controller
             'address' => 'required|string|max:255',
         ]);
 
-        // try {
-        // DB::beginTransaction();
+        try {
+        DB::beginTransaction();
 
         $user = User::create([
             'username' => "{$validatedData['first_name']} {$validatedData['last_name']}",
@@ -69,7 +69,7 @@ class PatientController extends Controller
 
         $token = $user->createToken('AuthToken')->plainTextToken;
 
-        // DB::commit();
+        DB::commit();
         return $user;
         return response()->json([
             'message' => 'Account created successfully.',
@@ -77,10 +77,10 @@ class PatientController extends Controller
             'patient' => $patient,
             'token' => $token,
         ], 201);
-        // } catch (\Exception $e) {
-        // DB::rollBack();
+        } catch (\Exception $e) {
+        DB::rollBack();
         return response()->json(['error' => 'Failed to create account.'], 500);
-        // }
+        }
     }
 
 
