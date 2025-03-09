@@ -24,7 +24,7 @@
         <p>Congratulations! 🎉 Your request to join as a volunteer doctor on the <strong>mesSupport Gaza</strong> platform has been <strong>approved</strong>.</p>
         <p>You can now log in to your account and start offering consultations to patients in need. Please click the link below to log in:</p>
         <p style="text-align: center;">
-        <form action="https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/login" method="POST" style="text-align: center;">
+        <form action="https://medsupport-gaza-cfd5c72a1744.herokuapp.com/api/doctor/login" method="POST" style="text-align: center;">
             @csrf
             <button type="submit" class="button">Login to Your Account</button>
         </form>
@@ -35,7 +35,7 @@
         <p style="text-align: center;">
          
         </p>
-        <form action="https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/register" method="POST" style="text-align: center;">
+        <form action="https://medsupport-gaza-cfd5c72a1744.herokuapp.com/api/doctor/register" method="POST" style="text-align: center;">
             @csrf
             <button type="submit" class="button">Submit a New Application</button>
         </form>
