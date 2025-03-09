@@ -76,3 +76,5 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 Route::post('/resendOtp', [AuthController::class, 'resendOtp']);
 
+//https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/register
+//https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/login
