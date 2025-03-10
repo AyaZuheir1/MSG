@@ -34,9 +34,28 @@ class DoctorController extends Controller
 
     public function profile(Request $request)
     {
-        $doctor =  Doctor::where('user_id',Auth::id())->get();
-        return response()->json(['doctor' => $doctor]);
-     }
+        $doctor = auth::user()->doctor;
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Patient profile not found'], 404);
+        }
+        return response()->json([
+            'doctor' => [
+                'id' => $doctor->id,
+                'user_id' => $doctor->user_id,
+                'first_name' => $doctor->first_name,
+                'last_name' => $doctor->last_name,
+                'email' => $request->user()->email,
+                'major' => $doctor->major,
+                'country' => $doctor->country,
+                'phone_number'=> $doctor->phone_number,
+                'average_rating'=> $doctor->average_rating,
+                'image'=> asset("storage/{$doctor->image}"),
+                'certificate'=> asset("storage/{$doctor->certificate}"),
+                'gender'=> $doctor->gender,
+            ],
+        ],);
+    }
 
 
     public function register(Request $request)

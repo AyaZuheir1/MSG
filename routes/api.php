@@ -40,7 +40,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('available-appointments/{doctorId}', [PatientController::class, 'availableAppointments']);
         Route::get('doctorappointments/{doctorId}', [PatientController::class, 'ShowAppointments']);
         Route::post('book-appointment/{id}', [PatientController::class, 'bookAppointment']);
-        Route::get('appointments', [PatientController::class, 'doctorAppointments']);
+        Route::get('appointments', [PatientController::class, 'myAppointments']);
         Route::post('cancel-appointment/{id}', [PatientController::class, 'cancelAppointment']);
     });
 
