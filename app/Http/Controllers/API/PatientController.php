@@ -25,8 +25,25 @@ class PatientController extends Controller
 
     public function profile(Request $request)
     {
-        $patient = $request->user()->patient;
-        return response()->json($patient);
+        $patient = auth::user()->patient;
+
+        if (!$patient) {
+            return response()->json(['error' => 'Patient profile not found'], 404);
+        }
+
+        return response()->json([
+            'patient' => [
+                'id' => $patient->id,
+                'user_id' => $patient->user_id,
+                'first_name' => $patient->first_name,
+                'last_name' => $patient->last_name,
+                'email' => auth::user()->email,
+                'age' => $patient->age,
+                'gender' => $patient->gender,
+                'phone_number' => $patient->phone_number,
+                'address' => $patient->address,
+            ],
+        ]);
     }
     public function register(Request $request)
     {
@@ -47,39 +64,39 @@ class PatientController extends Controller
         ]);
 
         try {
-        DB::beginTransaction();
+            DB::beginTransaction();
 
-        $user = User::create([
-            'username' => "{$validatedData['first_name']} {$validatedData['last_name']}",
-            'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password']),
-            'role' => 'patient',
-        ]);
+            $user = User::create([
+                'username' => "{$validatedData['first_name']} {$validatedData['last_name']}",
+                'email' => $validatedData['email'],
+                'password' => Hash::make($validatedData['password']),
+                'role' => 'patient',
+            ]);
 
-        // return "d";
-        $patient = Patient::create([
-            'user_id' => $user->id,
-            'first_name' => $validatedData['first_name'],
-            'last_name' => $validatedData['last_name'],
-            'age' => $validatedData['age'],
-            'gender' => $validatedData['gender'],
-            'phone_number' => $validatedData['phone_number'],
-            'address' => $validatedData['address'],
-        ]);
+            // return "d";
+            $patient = Patient::create([
+                'user_id' => $user->id,
+                'first_name' => $validatedData['first_name'],
+                'last_name' => $validatedData['last_name'],
+                'age' => $validatedData['age'],
+                'gender' => $validatedData['gender'],
+                'phone_number' => $validatedData['phone_number'],
+                'address' => $validatedData['address'],
+            ]);
 
-        $token = $user->createToken('AuthToken')->plainTextToken;
+            $token = $user->createToken('AuthToken')->plainTextToken;
 
-        DB::commit();
-        return $user;
-        return response()->json([
-            'message' => 'Account created successfully.',
-            'user' => $user,
-            'patient' => $patient,
-            'token' => $token,
-        ], 201);
+            DB::commit();
+            return $user;
+            return response()->json([
+                'message' => 'Account created successfully.',
+                'user' => $user,
+                'patient' => $patient,
+                'token' => $token,
+            ], 201);
         } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json(['error' => 'Failed to create account.'], 500);
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to create account.'], 500);
         }
     }
 

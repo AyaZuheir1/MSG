@@ -8,6 +8,9 @@ use App\Http\Controllers\API\DoctorController;
 use App\Http\Controllers\API\ArticleController;
 use App\Http\Controllers\API\PatientController;
 
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/doctor/login', [AuthController::class, 'login']);
+Route::post('/patient/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     
@@ -45,8 +48,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('doctor')->group(function () {
         Route::get('/profile', [DoctorController::class, 'profile']);
         Route::post('/update-profile', [DoctorController::class, 'update']);
-        Route::post('/login', [AuthController::class, 'login'])->name('doctorLogin');
-        Route::get('/login', [AuthController::class, 'login']);
 
 
         // Doctor Appointments
@@ -68,10 +69,9 @@ Route::middleware('auth:sanctum')->get('/get-messages/{appointmentId}', [ChatCon
 
 // Route::post('/select-role', [AuthController::class, 'selectRole']);
 Route::post('/patient/register', [PatientController::class, 'register']);
-Route::post('/doctor/register', [DoctorController::class, 'register'])->name('requst');
-Route::get('/doctor/register', [DoctorController::class, 'register'])->name('requst');
+Route::post('/doctor/register', [DoctorController::class, 'register']);
+Route::get('/doctor/register', [DoctorController::class, 'register']);
 Route::post('/patient/login', [AuthController::class, 'login']);
-Route::post('/login', [AuthController::class, 'login']);
 
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
