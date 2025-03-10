@@ -62,7 +62,7 @@ class AdminController extends Controller
                 'email' => $doctorRequest->email,
                 'password' => $doctorRequest->password,
                 'role' => 'doctor',
-                'fcm_token' => $request->token, //
+                'fcm_token' => '$request->token', //
             ]);
 
             $doctor = Doctor::create([

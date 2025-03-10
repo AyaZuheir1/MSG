@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'ayazuheir2@gmail.com',
             'password' => Hash::make('password123'), // تأكد من تغيير الباسورد لاحقًا
             'role' => 'doctor',
+            'fcm_token'=>'saa'
         ]);
     
         // ربط المستخدم بجدول الأطباء
