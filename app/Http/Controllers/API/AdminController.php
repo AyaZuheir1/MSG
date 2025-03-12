@@ -20,8 +20,9 @@ class AdminController extends Controller
 {
     public function getUsersList()
     {
-        $doctors = Doctor::with('user')->get();
-        $patients = Patient::with('user')->get();
+        $doctors = Doctor::all();
+        $patients = Patient::all();
+        
 
         return response()->json([
             'doctors' => $doctors->map(function ($doctor) {
