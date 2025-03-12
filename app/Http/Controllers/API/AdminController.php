@@ -20,8 +20,8 @@ class AdminController extends Controller
 {
     public function getUsersList()
     {
-        $doctors = Doctor::all();
-        $patients = Patient::all();
+        $doctors = Doctor::with('user')->get();
+    $patients = Patient::with('user')->get();
         
 
         return response()->json([
@@ -31,7 +31,7 @@ class AdminController extends Controller
                     'user_id' => $doctor->user_id,
                     'first_name' => $doctor->first_name,
                     'last_name' => $doctor->last_name,
-                    'email' => $doctor->user()->email ?? 'N/A',
+                    'email' => $doctor->user->email ?? 'N/A',  // ✅ التصحيح هنا
                     'major' => $doctor->major,
                     'country' => $doctor->country,
                     'phone_number' => $doctor->phone_number,
@@ -47,7 +47,7 @@ class AdminController extends Controller
                     'user_id' => $patient->user_id,
                     'first_name' => $patient->first_name,
                     'last_name' => $patient->last_name,
-                    'email' => $patient->user()->email ?? 'N/A',
+                    'email' => $patient->user->email ?? 'N/A',  // ✅ التصحيح هنا
                     'age' => $patient->age,
                     'gender' => $patient->gender,
                     'phone_number' => $patient->phone_number,
