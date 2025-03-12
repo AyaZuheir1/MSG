@@ -59,6 +59,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Admin Routes
     Route::prefix('admin')->group(function () {
+        Route::get('/users-list', [AdminController::class, 'getUsersList']);
         Route::put('/approve-doctor/{id}', [AdminController::class, 'approveDoctorRequest']);
         Route::put('/reject-doctor/{id}', [AdminController::class, 'rejectDoctorRequest']);
         Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);

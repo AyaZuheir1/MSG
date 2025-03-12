@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\API;
 
+use Exception;
 use Carbon\Carbon;
+use App\Models\User;
 use App\Models\Doctor;
+use App\Models\Message;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Services\SupabaseStorageService;
-use Exception;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
+use App\Services\SupabaseStorageService;
+use Illuminate\Routing\Controllers\Middleware;
 
 class DoctorController extends Controller
 {
@@ -48,16 +49,30 @@ class DoctorController extends Controller
                 'email' => $request->user()->email,
                 'major' => $doctor->major,
                 'country' => $doctor->country,
-                'phone_number'=> $doctor->phone_number,
-                'average_rating'=> $doctor->average_rating,
-                'image'=> asset("storage/{$doctor->image}"),
-                'certificate'=> asset("storage/{$doctor->certificate}"),
-                'gender'=> $doctor->gender,
+                'phone_number' => $doctor->phone_number,
+                'average_rating' => $doctor->average_rating,
+                'image' => asset("storage/{$doctor->image}"),
+                'certificate' => asset("storage/{$doctor->certificate}"),
+                'gender' => $doctor->gender,
             ],
         ],);
     }
 
+    public function home()
+    {
+        $dailyAppointments = Appointment::whereDate('date', now()->toDateString())->get();
 
+        $bookings = Appointment::where('status', 'Not Available')->get();
+        $unreadMessagesCount = Message::where('receiver_id', Auth::id()) 
+            ->where('is_read', false)
+            ->count();
+
+        return response()->json([
+            'daily_appointments' => $dailyAppointments,
+            'bookings' => $bookings,
+            'unread_messages' => $unreadMessagesCount,
+        ]);
+    }
     public function register(Request $request)
     {
         $validatedData = $request->validate([
@@ -170,27 +185,6 @@ class DoctorController extends Controller
             'appointment' => $appointment
         ], 201);
     }
-
-
-
-
-    private function normalizeTimeTo12Hour($time, $period = null)
-    {
-        if (preg_match('/^\d{1,2}$/', $time)) {
-            $time .= ':00';
-        }
-
-        try {
-            $carbonTime = $period
-                ? Carbon::parse("$time $period")
-                : Carbon::parse($time);
-
-            return $carbonTime->format('h:i A');
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
 
     public function doctorAppointments(Request $request)
     {
