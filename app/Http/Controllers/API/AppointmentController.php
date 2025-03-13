@@ -90,7 +90,7 @@ class AppointmentController extends Controller
         }
         $doctorId = Auth::user()->doctor->id;
         $status = $request->query('status', 'all');
-        $appointments = Appointment::where('doctor_id', $doctorId)
+        $appointment = Appointment::where('doctor_id', $doctorId)
             ->when($status !== 'all', function ($query) use ($status) {
                 return $query->where('status', $status);
             })
@@ -98,18 +98,22 @@ class AppointmentController extends Controller
             ->orderBy('start_time', 'asc')
             ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'appointments' => [
-                'id' => $appointments->id,
-                'doctor_id' => $appointments->doctor_id,
-                'date' => $appointments->date,
-                'start_time' => Carbon::createFromFormat('H:i', $appointments->start_time)->format('h:i A'),
-                'end_time' => Carbon::createFromFormat('H:i', $appointments->end_time)->format('h:i A'),
-                'status' => $appointments->status,
-                'is_accepted' => $appointments->is_accepted,
-            ]
-        ]);
+            $appointmentsData = $appointment->map(function ($appointment) {
+                return [
+                    'id' => $appointment->id,
+                    'doctor_id' => $appointment->doctor_id,
+                    'date' => $appointment->date,
+                    'start_time' => Carbon::createFromFormat('H:i', $appointment->start_time)->format('h:i A'),
+                    'end_time' => Carbon::createFromFormat('H:i', $appointment->end_time)->format('h:i A'),
+                    'status' => $appointment->status,
+                    'is_accepted' => $appointment->is_accepted,
+                ];
+            });
+        
+            return response()->json([
+                'status' => 'success',
+                'appointments' => $appointmentsData,
+            ]);
     }
 
     public function deleteAppointment($id)
@@ -225,17 +229,21 @@ class AppointmentController extends Controller
         $pendingAppointments = Appointment::where('is_accepted', 'pending')->get();
 
 
+        $appointments = $pendingAppointments->map(function ($appointment) {
+            return [
+                'id' => $appointment->id,
+                'doctor_id' => $appointment->doctor_id,
+                'date' => $appointment->date,
+                'start_time' => Carbon::createFromFormat('H:i', $appointment->start_time)->format('h:i A'),
+                'end_time' => Carbon::createFromFormat('H:i', $appointment->end_time)->format('h:i A'),
+                'status' => $appointment->status,
+                'is_accepted' => $appointment->is_accepted,
+            ];
+        });
+        
         return response()->json([
             'status' => 'success',
-            'appointments' => [
-                'id' => $pendingAppointments->id,
-                'doctor_id' => $pendingAppointments->doctor_id,
-                'date' => $pendingAppointments->date,
-                'start_time' => Carbon::createFromFormat('H:i', $pendingAppointments->start_time)->format('h:i A'),
-                'end_time' => Carbon::createFromFormat('H:i', $pendingAppointments->end_time)->format('h:i A'),
-                'status' => $pendingAppointments->status,
-                'is_accepted' => $pendingAppointments->is_accepted,
-            ]
+            'appointments' => $appointments,
         ]);
     }
     public function acceptAppointment($appointmentId)
