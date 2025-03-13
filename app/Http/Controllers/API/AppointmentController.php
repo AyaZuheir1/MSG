@@ -65,7 +65,7 @@ class AppointmentController extends Controller
             'end_time' => $endTime24,
             'period' => $request->period,
             'status' => 'Available',
-            'period' => $request->period,
+            'period' => 'gaza',
         ]);
 
         return response()->json([
