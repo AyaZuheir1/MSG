@@ -155,14 +155,14 @@ class DoctorController extends Controller
                 'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
             ], 422);
         }
-        $startTime12 = Carbon::createFromFormat('H:i:s', $startTime24)->format('h:i A');
-        $endTime12 = Carbon::createFromFormat('H:i:s', $endTime24)->format('h:i A');
+        $startTime12 = Carbon::createFromFormat('H:i', $startTime24)->format('h:i A');
+        $endTime12 = Carbon::createFromFormat('H:i', $endTime24)->format('h:i A');
 
         $appointment = Appointment::create([
             'doctor_id' => $doctorId,
             'date' => $validated['date'],
-            'start_time' => $startTime12,
-            'end_time' => $endTime12,
+            'start_time' => $startTime24,
+            'end_time' => $endTime24,
             'status' => 'Available',
             'period' => $request->period,
         ]);
@@ -170,7 +170,9 @@ class DoctorController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Schedule added successfully!',
-            'appointment' => $appointment
+            'appointment' => $appointment,
+            'start_time' => $startTime12,
+            'end_time' => $endTime12,
         ], 201);
     }
 
