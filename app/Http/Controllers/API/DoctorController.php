@@ -170,9 +170,15 @@ class DoctorController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Schedule added successfully!',
-            'appointment' => $appointment,
-            'start_time' => $startTime12,
-            'end_time' => $endTime12,
+            'appointment' => [
+                'id' => $appointment->id,
+                'doctor_id' => $appointment->doctor_id,
+                'date' => $appointment->date,
+                "start_time" => $startTime12,
+                'end_time' => $endTime12,
+                'status' => $appointment->status,
+                'period' => $appointment->period,
+            ]
         ], 201);
     }
 
