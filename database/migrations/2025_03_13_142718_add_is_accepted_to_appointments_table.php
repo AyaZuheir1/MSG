@@ -12,8 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('appointments', function (Blueprint $table) {
-            $table->boolean('is_accepted')->default(false)->after('status');
-        });
+            $table->enum('is_accepted', ['pending', 'accepted', 'rejected'])
+                ->nullable() 
+                ->default(null) 
+                ->after('status');     
+           });
     }
 
     /**

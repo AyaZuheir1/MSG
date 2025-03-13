@@ -7,6 +7,7 @@ use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\API\DoctorController;
 use App\Http\Controllers\API\ArticleController;
 use App\Http\Controllers\API\PatientController;
+use App\Http\Controllers\API\AppointmentController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/doctor/login', [AuthController::class, 'login']);
@@ -56,10 +57,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
         // Doctor Appointments
-        Route::post('/schedule', [DoctorController::class, 'addSchedule']);
-        Route::put('/appointments/{appointmentId}', [DoctorController::class, 'updateSchedule']);
-        Route::get('/appointments', [DoctorController::class, 'doctorAppointments']);
-        Route::delete('/appointment/{id}', [DoctorController::class, 'deleteAppointment']);
+        Route::post('/schedule', [AppointmentController::class, 'addSchedule']);
+        Route::put('/appointments/{appointmentId}', [AppointmentController::class, 'updateSchedule']);
+        Route::get('/appointments', [AppointmentController::class, 'doctorAppointments']);
+        Route::delete('/appointment/{id}', [AppointmentController::class, 'deleteAppointment']);
+        Route::get('/appointments/pending', [AppointmentController::class, 'getPendingAppointments']);
+        Route::put('/appointment/accept/{appointmentId}', [AppointmentController::class, 'acceptAppointment']);
+        Route::put('/appointment/reject/{appointmentId}', [AppointmentController::class, 'rejectAppointment']);
     });
 
     // Admin Routes
