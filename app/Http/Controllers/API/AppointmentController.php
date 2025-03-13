@@ -63,6 +63,7 @@ class AppointmentController extends Controller
             'date' => $validated['date'],
             'start_time' => $startTime24,
             'end_time' => $endTime24,
+            'period' => $request->period,
             'status' => 'Available',
             'period' => $request->period,
         ]);
