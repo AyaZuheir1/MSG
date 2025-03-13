@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Doctor;
 use App\Models\Review;
@@ -100,7 +101,86 @@ class PatientController extends Controller
         }
     }
 
+    public function getSpecializations()
+    {
+        $specializations = Doctor::select('major')
+            ->distinct()
+            ->get();
 
+        return response()->json([
+            'specializations' => $specializations
+        ], 200);
+    }
+    public function getDoctorsBySpecialization($specialization)
+    {
+        $doctors = Doctor::where('major', $specialization)->get();
+
+        return response()->json([
+            'doctors' => $doctors
+        ], 200);
+    }
+    // public function getDoctorAvailabilityByDay($doctorId, Request $request)
+    // {
+    //     $date = $request->query('date');
+
+    //     // التحقق من صحة التاريخ المدخل
+    //     if (!$date || !Carbon::hasFormat($date, 'Y-m-d')) {
+    //         return response()->json(['error' => 'Invalid date format. Use YYYY-MM-DD'], 400);
+    //     }
+
+    //     // استخراج اليوم من التاريخ
+    //     $dayOfWeek = Carbon::parse($date)->format('l'); // (مثلاً: Monday, Tuesday)
+
+    //     // جلب جميع المواعيد المحجوزة لهذا الطبيب في هذا اليوم
+    //     $bookedTimes = Appointment::where('doctor_id', $doctorId)
+    //         ->whereDate('date', $date)
+    //         ->pluck('time') // جلب الأوقات المحجوزة
+    //         ->toArray();
+
+    //     // جلب جميع الأوقات التي يعمل بها الطبيب في ذلك اليوم من جدول المواعيد
+    //     $allDoctorTimes = Appointment::where('doctor_id', $doctorId)
+    //         ->where('day', $dayOfWeek) // تأكد أن لديك حقل `day` في جدول `appointments`
+    //         ->pluck('time')
+    //         ->toArray();
+
+    //     // الأوقات المتاحة = كل الأوقات التي يعمل بها الطبيب - الأوقات المحجوزة
+    //     $availableTimes = array_diff($allDoctorTimes, $bookedTimes);
+
+    //     return response()->json([
+    //         'date' => $date,
+    //         'day' => $dayOfWeek,
+    //         'available_times' => array_values($availableTimes),
+    //     ], 200);
+    // }
+
+    public function getDoctorAvailabilityByDay($doctorId, Request $request)
+    {
+        $date = $request->query('date');
+
+        // التحقق من صحة التاريخ المدخل
+        if (!$date || !Carbon::hasFormat($date, 'Y-m-d')) {
+            return response()->json(['error' => 'Invalid date format. Use YYYY-MM-DD'], 400);
+        }
+
+        $allDoctorTimes = Appointment::where('doctor_id', $doctorId)
+            ->whereDate('date', $date) 
+            ->pluck('time')
+            ->toArray();
+
+        $bookedTimes = Appointment::where('doctor_id', $doctorId)
+            ->whereDate('date', $date)
+            ->whereNotNull('patient_id') 
+            ->pluck('time')
+            ->toArray();
+
+        // استبعاد الأوقات المحجوزة من الأوقات المتاحة
+        $availableTimes = array_diff($allDoctorTimes, $bookedTimes);
+
+        return response()->json([
+            'date' => $date,
+            'available_times' => array_values($availableTimes),
+        ], 200);
+    }
     private function updateDoctorAverageRating($doctor_id)
     {
         $doctor = Doctor::find($doctor_id);

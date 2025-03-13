@@ -28,7 +28,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/get-messages/{appointment_id}', [ChatController::class, 'getMessages']);
-
+    Route::get('/specializations', [PatientController::class, 'getSpecializations']);
+    Route::get('/doctors/{specialization}', [PatientController::class, 'getDoctorsBySpecialization']);
+    Route::get('/doctors/{doctorId}/availability', [PatientController::class, 'getDoctorAvailabilityByDay']);
     // Patient Routes
     Route::prefix('patient')->group(function () {
         Route::get('/profile', [PatientController::class, 'profile']);
@@ -42,6 +44,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('book-appointment/{id}', [PatientController::class, 'bookAppointment']);
         Route::get('appointments', [PatientController::class, 'myAppointments']);
         Route::post('cancel-appointment/{id}', [PatientController::class, 'cancelAppointment']);
+        
+
+
     });
 
     // Doctor Routes
