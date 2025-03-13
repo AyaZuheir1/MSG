@@ -223,90 +223,92 @@ class ArticleController extends Controller
 
     public function Articles()
     {
+
         $articles = Article::orderBy('created_at', 'desc')->paginate(5);
         return response()->json([
             'code' => 200,
             'articles' => $articles,
         ]);
     }
-    public function restore($id): JsonResponse
-    {
-        if (!Gate::allows('manage-article')) {
-            return response()->json(['error' => 'Unauthorized action.'], 403);
-        }
+    // public function restore($id): JsonResponse
+    // {
+    //     if (!Gate::allows('manage-article')) {
+    //         return response()->json(['error' => 'Unauthorized action.'], 403);
+    //     }
 
-        DB::beginTransaction();
-        try {
-            // Find soft-deleted article
-            $article = Article::onlyTrashed()->findOrFail($id);
+    //     DB::beginTransaction();
+    //     try {
+    //         // Find soft-deleted article
+    //         $article = Article::onlyTrashed()->findOrFail($id);
 
-            // Restore the article
-            $article->restore();
+    //         // Restore the article
+    //         $article->restore();
 
-            DB::commit();
+    //         DB::commit();
 
-            return response()->json([
-                'message' => 'Article restored successfully!',
-                'article' => $article,
-            ], 200);
-        } catch (Exception $e) {
-            DB::rollBack();
+    //         return response()->json([
+    //             'message' => 'Article restored successfully!',
+    //             'article' => $article,
+    //         ], 200);
+    //     } catch (Exception $e) {
+    //         DB::rollBack();
 
-            return response()->json([
-                'error' => 'Something went wrong while restoring the article.',
-                'details' => $e->getMessage(),
-            ], 500);
-        }
-    }
-    public function trashedArticle(): JsonResponse
-    {
-        if (!Gate::allows('manage-article')) {
-            abort(403, 'Unauthorized action.');
-        }
+    //         return response()->json([
+    //             'error' => 'Something went wrong while restoring the article.',
+    //             'details' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+    // public function trashedArticle()
+    // {
+    //     return "ssss";
+    //     if (!Gate::allows('manage-article')) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
 
-        $articles = Article::onlyTrashed()->get();
+    //     $articles = Article::onlyTrashed()->get();
 
-        if ($articles->isEmpty()) {
-            return response()->json([
-                'message' => 'No trashed articles found.',
-                'articles' => [],
-            ], 200);
-        }
+    //     if ($articles->isEmpty()) {
+    //         return response()->json([
+    //             'message' => 'No trashed articles found.',
+    //             'articles' => [],
+    //         ], 200);
+    //     }
 
-        return response()->json([
-            'message' => 'Trashed articles retrieved successfully.',
-            'articles' => $articles,
-        ], 200);
-    }
-    public function forceDelete($id)
-    {
-        if (!Gate::allows('manage-article')) {
-            abort(403, 'Unauthorized action.');
-        }
-        try {
-            // Retrieve the article, including soft-deleted ones
-            $article = Article::withTrashed()->find($id);
+    //     return response()->json([
+    //         'message' => 'Trashed articles retrieved successfully.',
+    //         'articles' => $articles,
+    //     ], 200);
+    // }
+    // public function forceDelete($id)
+    // {
+    //     if (!Gate::allows('manage-article')) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
+    //     try {
+    //         // Retrieve the article, including soft-deleted ones
+    //         $article = Article::withTrashed()->find($id);
 
-            // If article is not found
-            if (!$article) {
-                return response()->json([
-                    'message' => 'Article not found',
-                ], 404);
-            }
+    //         // If article is not found
+    //         if (!$article) {
+    //             return response()->json([
+    //                 'message' => 'Article not found',
+    //             ], 404);
+    //         }
 
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            $article->forceDelete();
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    //         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+    //         $article->forceDelete();
+    //         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-            return response()->json([
-                'message' => 'Article permanently deleted successfully',
-            ], 200);
-        } catch (\Exception $e) {
-            // In case of any errors
-            return response()->json([
-                'message' => 'An error occurred while deleting the article.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'message' => 'Article permanently deleted successfully',
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         // In case of any errors
+    //         return response()->json([
+    //             'message' => 'An error occurred while deleting the article.',
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 }

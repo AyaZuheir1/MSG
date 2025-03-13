@@ -55,7 +55,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/appointments/{appointmentId}', [DoctorController::class, 'updateSchedule']);
         Route::get('/appointments', [DoctorController::class, 'doctorAppointments']);
         Route::delete('/appointment/{id}', [DoctorController::class, 'deleteAppointment']);
-    });
+    // doctor specializations
+});
+Route::get('/specializations', [DoctorController::class, 'getSpecializations']);
 
     // Admin Routes
     Route::prefix('admin')->group(function () {
@@ -78,6 +80,27 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 Route::get('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resendOtp', [AuthController::class, 'resendOtp']);
+
+use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\Exception\HttpTransportException;
+
+Route::get('/test-email', function () {
+    try {
+        Mail::raw('This is a test email from Laravel via Mailgun!', function ($message) {
+            $message->to('nuha.sammour02@gmail.com')
+                    ->subject('Test Email');
+        });
+        return 'Email sent!';
+    } catch (HttpTransportException $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'response' => $e->getResponse() ? $e->getResponse()->getContent(false) : 'No response body',
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
 
 //https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/register
 //https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/login

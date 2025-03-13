@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SupabaseStorageService;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controllers\Middleware;
@@ -37,7 +38,7 @@ class DoctorController extends Controller
         $doctor = auth::user()->doctor;
 
         if (!$doctor) {
-            return response()->json(['error' => 'Patient profile not found'], 404);
+            return response()->json(['error' => 'Doctor profile not found'], 404);
         }
         return response()->json([
             'doctor' => [
@@ -48,11 +49,11 @@ class DoctorController extends Controller
                 'email' => $request->user()->email,
                 'major' => $doctor->major,
                 'country' => $doctor->country,
-                'phone_number'=> $doctor->phone_number,
-                'average_rating'=> $doctor->average_rating,
-                'image'=> asset("storage/{$doctor->image}"),
-                'certificate'=> asset("storage/{$doctor->certificate}"),
-                'gender'=> $doctor->gender,
+                'phone_number' => $doctor->phone_number,
+                'average_rating' => $doctor->average_rating,
+                'image' => $doctor->image,
+                'certificate' => $doctor->certificate,
+                'gender' => $doctor->gender,
             ],
         ],);
     }
@@ -154,12 +155,14 @@ class DoctorController extends Controller
                 'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
             ], 422);
         }
+        $startTime12 = Carbon::createFromFormat('H:i:s', $startTime24)->format('h:i A');
+        $endTime12 = Carbon::createFromFormat('H:i:s', $endTime24)->format('h:i A');
 
         $appointment = Appointment::create([
             'doctor_id' => $doctorId,
             'date' => $validated['date'],
-            'start_time' => $startTime24,
-            'end_time' => $endTime24,
+            'start_time' => $startTime12,
+            'end_time' => $endTime12,
             'status' => 'Available',
             'period' => $request->period,
         ]);
@@ -251,7 +254,41 @@ class DoctorController extends Controller
         }
         return response()->json(['doctor' => $doctor]);
     }
+    public function getSpecializations(): JsonResponse
+    {
+        try {
+            $query = Doctor::select(
+                'major',
+                DB::raw('COUNT(*) as doctor_count')
+            )
+                ->groupBy('major')
+                ->orderBy('major', 'asc');
 
+            // Add optional search parameter
+            if (request()->has('search')) {
+                $query->where('major', 'like', '%' . request('search') . '%');
+            }
+
+            $specializations = $query->paginate(10);
+
+            return response()->json([
+                'status' => 'success',
+                'doctor-specializations' => $specializations->items(),
+                'pagination' => [
+                    'total' => $specializations->total(),
+                    'per_page' => $specializations->perPage(),
+                    'current_page' => $specializations->currentPage(),
+                    'last_page' => $specializations->lastPage()
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve specializations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     /**
      * Update the specified resource in storage.
      */
