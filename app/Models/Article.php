@@ -28,6 +28,7 @@ class Article extends Model
 
     protected  static function booted(){
         static::deleted(function(Article $article){
+            
             $article->status = 'deleted';
             $article->save();
         });

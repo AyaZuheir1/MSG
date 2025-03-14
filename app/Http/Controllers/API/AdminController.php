@@ -42,12 +42,13 @@ class AdminController extends Controller
                 ];
             }),
             'patients' => $patients->map(function ($patient) {
+                
                 return [
                     'id' => $patient->id,
                     'user_id' => $patient->user_id,
                     'first_name' => $patient->first_name,
                     'last_name' => $patient->last_name,
-                    'email' => $patient->user->email ?? 'N/A',  // ✅ التصحيح هنا
+                    'email' => $patient->user->email ?? 'N/A',  
                     'age' => $patient->age,
                     'gender' => $patient->gender,
                     'phone_number' => $patient->phone_number,

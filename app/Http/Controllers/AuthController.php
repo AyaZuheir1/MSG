@@ -57,7 +57,7 @@ class AuthController extends Controller
                         'country' => $doctor->country,
                         'phone_number'    => $doctor->phone_number,
                         'average_rating'  => $doctor->average_rating,
-                        'image'           => asset("storage/{$doctor->image}"),
+                        'image' => $doctor->image,
                         'certificate'     => asset("storage/{$doctor->certificate}"),
                         'gender'          => $doctor->gender,
                     ],

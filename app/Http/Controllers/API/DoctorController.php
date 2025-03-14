@@ -51,7 +51,7 @@ class DoctorController extends Controller
                 'country' => $doctor->country,
                 'phone_number' => $doctor->phone_number,
                 'average_rating' => $doctor->average_rating,
-                'image' => asset("storage/{$doctor->image}"),
+                'image' => $doctor->image,
                 'certificate' => asset("storage/{$doctor->certificate}"),
                 'gender' => $doctor->gender,
             ],
@@ -63,7 +63,7 @@ class DoctorController extends Controller
         $dailyAppointments = Appointment::whereDate('date', now()->toDateString())->get();
 
         $bookings = Appointment::where('status', 'Not Available')->get();
-        $unreadMessagesCount = Message::where('receiver_id', Auth::id()) 
+        $unreadMessagesCount = Message::where('receiver_id', Auth::id())
             ->where('is_read', false)
             ->count();
 
