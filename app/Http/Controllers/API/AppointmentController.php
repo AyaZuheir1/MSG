@@ -356,17 +356,14 @@ class AppointmentController extends Controller
         $appointment = Appointment::findOrFail($id);
         $patientId = Auth::user()->patient->id;
 
-        // إذا كان الموعد في حالة pending وكان نفس المريض قد حجزه مسبقًا
         if ($appointment->is_accepted == 'pending' && $appointment->patient_id == $patientId) {
             return response()->json(['status' => 'error', 'message' => 'Appointment is already requested'], 400);
         }
 
-        // إذا كان الموعد غير مقبول وكان هناك مريض آخر يحاول حجزه، يمكنه حجز موعد جديد
         if ($appointment->is_accepted != 'accepted') {
-            // إنشاء موعد جديد
-            $newAppointment = $appointment->replicate();  // نسخ الموعد الحالي
-            $newAppointment->patient_id = $patientId;  // تعيين patient_id للمريض الجديد
-            $newAppointment->is_accepted = 'pending';  // تعيين حالة الموعد إلى pending
+            $newAppointment = $appointment->replicate(); 
+            $newAppointment->patient_id = $patientId;  
+            $newAppointment->is_accepted = 'pending'; 
             $newAppointment->save();
 
             return response()->json([
