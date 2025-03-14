@@ -26,19 +26,18 @@ class DatabaseSeeder extends Seeder
             'username' => 'aya Herz',
             'email' => 'aya@gmail.com',
             'password' => Hash::make('password123'), // تأكد من تغيير الباسورد لاحقًا
-            'role' => 'patient',
+            'role' => 'admin',
             'fcm_token'=>'saa'
         ]);
     
         // ربط المستخدم بجدول الأطباء
-        patient::create([
+        admin::create([
             'user_id' => $user->id,
             'first_name' => 'Saja',
             'last_name' => 'Herz',
-            'age' => '22',
-            'gender' => 'male',
-            'phone_number' => '+491234567890',
-            'address' => 'Berlin',
+           
+            'number' => '+491234567890',
+            'job_title' => 'Berlin',
             
         ]);
 

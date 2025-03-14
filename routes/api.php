@@ -24,7 +24,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Route::put('articles/{id}', [ArticleController::class,'update']); // override to avoid Not Found error
     Route::get('/download/{filename}', [ChatController::class, 'download']);
 
-    Route::get('/articles/search', [ArticleController::class, 'search']);
+    Route::get('/article/search', [ArticleController::class, 'search']);
 
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
