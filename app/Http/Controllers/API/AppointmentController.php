@@ -443,13 +443,12 @@ class AppointmentController extends Controller
             abort(403, 'Unauthorized action.');
         }
         $specializations = Doctor::select('major')
-        ->distinct()
-        ->get()
-        ->map(function ($specialization) {
-            // حساب عدد الأطباء في كل تخصص
-            $specialization->doctor_count = Doctor::where('major', $specialization->major)->count();
-            return $specialization;
-        });
+            ->distinct()
+            ->get()
+            ->map(function ($specialization) {
+                $specialization->doctor_count = Doctor::where('major', $specialization->major)->count();
+                return $specialization;
+            });
 
         return response()->json([
             'specializations' => $specializations
@@ -467,34 +466,19 @@ class AppointmentController extends Controller
         ], 200);
     }
     public function getDoctorAvailabilityByDay($doctorId, Request $request)
-{
-    if (!Gate::allows('can-rate')) {
-        abort(403, 'Unauthorized action.');
+    {
+        if (!Gate::allows('can-rate')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $date = $request->query('date');
+        if (!$date || !\Carbon\Carbon::hasFormat($date, 'Y-m-d')) {
+            return response()->json(['error' => 'Invalid date format. Use YYYY-MM-DD'], 400);
+        }
+
+        $appointments = Appointment::where('date', $date)
+            ->where('status', 'Available')
+            ->get();
+
+        return response()->json($appointments);
     }
-
-    $date = $request->query('date');
-
-    if (!$date || !Carbon::hasFormat($date, 'Y-m-d')) {
-        return response()->json(['error' => 'Invalid date format. Use YYYY-MM-DD'], 400);
-    }
-
-    $allDoctorTimes = Appointment::where('doctor_id', $doctorId)
-        ->whereDate('date', $date)
-        ->pluck('start_time') 
-        ->toArray();
-
-    $bookedTimes = Appointment::where('doctor_id', $doctorId)
-        ->whereDate('date', $date)
-        ->whereNotNull('patient_id')
-        ->pluck('start_time') 
-        ->toArray();
-
-    $availableTimes = array_diff($allDoctorTimes, $bookedTimes);
-
-    return response()->json([
-        'date' => $date,
-        'available_times' => array_values($availableTimes),
-    ], 200);
-}
-
 }
