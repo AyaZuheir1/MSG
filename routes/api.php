@@ -14,6 +14,7 @@ Route::post('/doctor/login', [AuthController::class, 'login']);
 Route::post('/patient/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/article/search', [ArticleController::class, 'search']);
 
     //Article Routes
     Route::apiResource('articles', ArticleController::class);
@@ -24,7 +25,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Route::put('articles/{id}', [ArticleController::class,'update']); // override to avoid Not Found error
     Route::get('/download/{filename}', [ChatController::class, 'download']);
 
-    Route::get('/article/search', [ArticleController::class, 'search']);
 
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
