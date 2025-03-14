@@ -14,7 +14,7 @@ Route::post('/doctor/login', [AuthController::class, 'login']);
 Route::post('/patient/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    
+
     //Article Routes
     Route::apiResource('articles', ArticleController::class);
     Route::post('/articles/{article}', [ArticleController::class, 'update']);
@@ -29,9 +29,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/get-messages/{appointment_id}', [ChatController::class, 'getMessages']);
-    Route::get('/specializations', [PatientController::class, 'getSpecializations']);
-    Route::get('/doctors/{specialization}', [PatientController::class, 'getDoctorsBySpecialization']);
-    Route::get('/doctors/{doctorId}/availability', [PatientController::class, 'getDoctorAvailabilityByDay']);
+
     // Patient Routes
     Route::prefix('patient')->group(function () {
         Route::get('/profile', [PatientController::class, 'profile']);
@@ -40,14 +38,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/service/rate', [PatientController::class, 'rateService']);
 
         // Patient Appointments
-        Route::get('available-appointments/{doctorId}', [PatientController::class, 'availableAppointments']);
-        Route::get('doctorappointments/{doctorId}', [PatientController::class, 'ShowAppointments']);
-        Route::post('book-appointment/{id}', [PatientController::class, 'bookAppointment']);
-        Route::get('appointments', [PatientController::class, 'myAppointments']);
-        Route::post('cancel-appointment/{id}', [PatientController::class, 'cancelAppointment']);
-        
-
-
+        Route::get('available-appointments/{doctorId}', [AppointmentController::class, 'availableAppointments']);
+        Route::get('doctorappointments/{doctorId}', [AppointmentController::class, 'ShowAppointments']);
+        Route::post('book-appointment/{id}', [AppointmentController::class, 'bookAppointment']);
+        Route::get('appointments', [AppointmentController::class, 'myAppointments']);
+        Route::post('cancel-appointment/{id}', [AppointmentController::class, 'cancelAppointment']);
+        Route::get('/specializations', [AppointmentController::class, 'getSpecializations']);
+        Route::get('/doctors/{specialization}', [AppointmentController::class, 'getDoctorsBySpecialization']);
+        Route::get('/doctors/{doctorId}/availability', [AppointmentController::class, 'getDoctorAvailabilityByDay']);
     });
 
     // Doctor Routes

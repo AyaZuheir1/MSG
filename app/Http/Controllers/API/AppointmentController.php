@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use Carbon\Carbon;
+use App\Models\Doctor;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -98,22 +100,24 @@ class AppointmentController extends Controller
             ->orderBy('start_time', 'asc')
             ->get();
 
-            $appointmentsData = $appointment->map(function ($appointment) {
-                return [
-                    'id' => $appointment->id,
-                    'doctor_id' => $appointment->doctor_id,
-                    'date' => $appointment->date,
-                    'start_time' => Carbon::createFromFormat('H:i', $appointment->start_time)->format('h:i A'),
-                    'end_time' => Carbon::createFromFormat('H:i', $appointment->end_time)->format('h:i A'),
-                    'status' => $appointment->status,
-                    'is_accepted' => $appointment->is_accepted,
-                ];
-            });
-        
-            return response()->json([
-                'status' => 'success',
-                'appointments' => $appointmentsData,
-            ]);
+
+
+        $appointmentsData = $appointment->map(function ($appointment) {
+            return [
+                'id' => $appointment->id,
+                'doctor_id' => $appointment->doctor_id,
+                'date' => $appointment->date,
+                'start_time' => Carbon::createFromFormat('H:i:s', $appointment->start_time)->format('h:i A'),
+                'end_time' => Carbon::createFromFormat('H:i:s', $appointment->end_time)->format('h:i A'),
+                'status' => $appointment->status,
+                'is_accepted' => $appointment->is_accepted,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'appointments' => $appointmentsData,
+        ]);
     }
 
     public function deleteAppointment($id)
@@ -226,6 +230,9 @@ class AppointmentController extends Controller
 
     public function getPendingAppointments()
     {
+        if (!Gate::allows('manage-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $pendingAppointments = Appointment::where('is_accepted', 'pending')->get();
 
 
@@ -234,13 +241,13 @@ class AppointmentController extends Controller
                 'id' => $appointment->id,
                 'doctor_id' => $appointment->doctor_id,
                 'date' => $appointment->date,
-                'start_time' => Carbon::createFromFormat('H:i', $appointment->start_time)->format('h:i A'),
-                'end_time' => Carbon::createFromFormat('H:i', $appointment->end_time)->format('h:i A'),
+                'start_time' => Carbon::createFromFormat('H:i:s', $appointment->start_time)->format('h:i A'),
+                'end_time' => Carbon::createFromFormat('H:i:s', $appointment->end_time)->format('h:i A'),
                 'status' => $appointment->status,
                 'is_accepted' => $appointment->is_accepted,
             ];
         });
-        
+
         return response()->json([
             'status' => 'success',
             'appointments' => $appointments,
@@ -248,6 +255,9 @@ class AppointmentController extends Controller
     }
     public function acceptAppointment($appointmentId)
     {
+        if (!Gate::allows('manage-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $appointment = Appointment::findOrFail($appointmentId);
 
         if ($appointment->is_accepted != 'pending') {
@@ -268,8 +278,9 @@ class AppointmentController extends Controller
                 'id' => $appointment->id,
                 'doctor_id' => $appointment->doctor_id,
                 'date' => $appointment->date,
-                'start_time' => Carbon::createFromFormat('H:i', $appointment->start_time)->format('h:i A'),
-                'end_time' => Carbon::createFromFormat('H:i', $appointment->end_time)->format('h:i A'),
+                'start_time' => Carbon::createFromFormat('H:i:s', $appointment->start_time)->format('h:i A'),
+                'end_time' => Carbon::createFromFormat('H:i:s', $appointment->end_time)->format('h:i A'),
+
                 'status' => $appointment->status,
                 'is_accepted' => $appointment->is_accepted,
             ]
@@ -277,6 +288,9 @@ class AppointmentController extends Controller
     }
     public function rejectAppointment($appointmentId)
     {
+        if (!Gate::allows('manage-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
         $appointment = Appointment::findOrFail($appointmentId);
 
         if ($appointment->is_accepted != 'pending') {
@@ -298,11 +312,189 @@ class AppointmentController extends Controller
                 'id' => $appointment->id,
                 'doctor_id' => $appointment->doctor_id,
                 'date' => $appointment->date,
-                'start_time' => Carbon::createFromFormat('H:i', $appointment->start_time)->format('h:i A'),
-                'end_time' => Carbon::createFromFormat('H:i', $appointment->end_time)->format('h:i A'),
+                'start_time' => Carbon::createFromFormat('H:i:s', $appointment->start_time)->format('h:i A'),
+                'end_time' => Carbon::createFromFormat('H:i:s', $appointment->end_time)->format('h:i A'),
                 'status' => $appointment->status,
                 'is_accepted' => $appointment->is_accepted,
             ]
         ]);
     }
+
+
+
+
+
+    public function availableAppointments($doctorId)
+    {
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $appointments = Appointment::where('doctor_id', $doctorId)
+            ->whereNull('patient_id')
+            ->where('status', 'Available')
+            ->get();
+
+        return response()->json($appointments);
+    }
+
+    public function showAppointments($doctorId)
+    {
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $appointments = Appointment::where('doctor_id', $doctorId)->get();
+
+        return response()->json($appointments);
+    }
+
+    public function bookAppointment(Request $request, $id)
+    {
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $appointment = Appointment::findOrFail($id);
+        $patientId = Auth::user()->patient->id;
+
+        // إذا كان الموعد في حالة pending وكان نفس المريض قد حجزه مسبقًا
+        if ($appointment->is_accepted == 'pending' && $appointment->patient_id == $patientId) {
+            return response()->json(['status' => 'error', 'message' => 'Appointment is already requested'], 400);
+        }
+
+        // إذا كان الموعد غير مقبول وكان هناك مريض آخر يحاول حجزه، يمكنه حجز موعد جديد
+        if ($appointment->is_accepted != 'accepted') {
+            // إنشاء موعد جديد
+            $newAppointment = $appointment->replicate();  // نسخ الموعد الحالي
+            $newAppointment->patient_id = $patientId;  // تعيين patient_id للمريض الجديد
+            $newAppointment->is_accepted = 'pending';  // تعيين حالة الموعد إلى pending
+            $newAppointment->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Appointment requested successfully! A new appointment has been created.'
+            ]);
+        }
+
+        // التحقق من وجود تعارض في المواعيد
+        $conflict = Appointment::where('patient_id', $patientId)
+            ->where('date', $appointment->date)
+            ->where('is_accepted', 'accepted')  // التأكد من أن الموعد مقبول
+            ->where(function ($query) use ($appointment) {
+                $query->whereBetween('start_time', [$appointment->start_time, $appointment->end_time])
+                    ->orWhereBetween('end_time', [$appointment->start_time, $appointment->end_time]);
+            })
+            ->exists();
+
+        if ($conflict) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You already have an appointment at this time. Please choose a different time slot.'
+            ], 400);
+        }
+
+        $appointment->patient_id = $patientId;
+        $appointment->is_accepted = 'pending';
+        $appointment->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Appointment requested successfully!'
+        ]);
+    }
+
+    public function myAppointments()
+    {
+        if (!Gate::allows('manage-their-schedule')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $patientId = Auth::user()->patient->id;
+        $appointments = Appointment::where('patient_id', $patientId)->get();
+
+        return response()->json($appointments);
+    }
+
+    public function cancelAppointment($id)
+    {
+        if (!Gate::allows('manage-their-schedulee')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $appointment = Appointment::findOrFail($id);
+
+        if ($appointment->patient_id !== Auth::user()->patient->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        if (Carbon::parse($appointment->date . ' ' . $appointment->time)->isPast()) {
+            return response()->json(['message' => 'Cannot cancel a past appointment'], 400);
+        }
+        $appointment->patient_id = null;
+        $appointment->is_accepted = null;
+        $appointment->status = 'Available';
+
+        $appointment->save();
+
+
+        return response()->json(['message' => 'Appointment canceled successfully!'], 200);
+    }
+
+    public function getSpecializations()
+    {
+        if (!Gate::allows('can-rate')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $specializations = Doctor::select('major')
+        ->distinct()
+        ->get()
+        ->map(function ($specialization) {
+            // حساب عدد الأطباء في كل تخصص
+            $specialization->doctor_count = Doctor::where('major', $specialization->major)->count();
+            return $specialization;
+        });
+
+        return response()->json([
+            'specializations' => $specializations
+        ], 200);
+    }
+    public function getDoctorsBySpecialization($specialization)
+    {
+        if (!Gate::allows('can-rate')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $doctors = Doctor::where('major', $specialization)->get();
+
+        return response()->json([
+            'doctors' => $doctors
+        ], 200);
+    }
+    public function getDoctorAvailabilityByDay($doctorId, Request $request)
+{
+    if (!Gate::allows('can-rate')) {
+        abort(403, 'Unauthorized action.');
+    }
+
+    $date = $request->query('date');
+
+    if (!$date || !Carbon::hasFormat($date, 'Y-m-d')) {
+        return response()->json(['error' => 'Invalid date format. Use YYYY-MM-DD'], 400);
+    }
+
+    $allDoctorTimes = Appointment::where('doctor_id', $doctorId)
+        ->whereDate('date', $date)
+        ->pluck('start_time') 
+        ->toArray();
+
+    $bookedTimes = Appointment::where('doctor_id', $doctorId)
+        ->whereDate('date', $date)
+        ->whereNotNull('patient_id')
+        ->pluck('start_time') 
+        ->toArray();
+
+    $availableTimes = array_diff($allDoctorTimes, $bookedTimes);
+
+    return response()->json([
+        'date' => $date,
+        'available_times' => array_values($availableTimes),
+    ], 200);
+}
+
 }

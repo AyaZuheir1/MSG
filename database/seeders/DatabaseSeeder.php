@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Admin;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Appointment;
@@ -22,25 +23,23 @@ class DatabaseSeeder extends Seeder
         //     DoctorSeeder::class, 
         // ]);
         $user = User::create([
-            'username' => 'Saja Herz',
-            'email' => 'ayazuheir2@gmail.com',
+            'username' => 'aya Herz',
+            'email' => 'aya@gmail.com',
             'password' => Hash::make('password123'), // تأكد من تغيير الباسورد لاحقًا
-            'role' => 'doctor',
+            'role' => 'patient',
             'fcm_token'=>'saa'
         ]);
     
         // ربط المستخدم بجدول الأطباء
-        Doctor::create([
+        patient::create([
             'user_id' => $user->id,
             'first_name' => 'Saja',
             'last_name' => 'Herz',
-            'major' => 'Cardiology',
-            'country' => 'Germany',
+            'age' => '22',
+            'gender' => 'male',
             'phone_number' => '+491234567890',
-            'average_rating' => 4.9,
-            'image' => 'doctor_images/default.png',
-            'certificate' => 'certificates/saja_certificate.pdf', 
-            'gender' => 'female' 
+            'address' => 'Berlin',
+            
         ]);
 
         // User::factory(10)->create(); // إنشاء مستخدمين
