@@ -19,6 +19,9 @@ class Appointment extends Model
         'end_time',
         'status',
     ];
+    // protected $casts = [
+    //     'date' => 'date', // يحول date إلى كائن تاريخ بدلاً من string
+    // ];
 
     public function patient()
     {
