@@ -17,13 +17,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     //Article Routes
     Route::apiResource('articles', ArticleController::class);
     Route::post('/articles/{article}', [ArticleController::class, 'update']);
-    Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
-    Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
-    Route::delete('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
+    Route::get('/article/search', [ArticleController::class, 'search']);
+    // Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
+    // Route::get('/articles/trashed', [ArticleController::class, 'trashedArticle']);
+    // Route::delete('/articles/{id}/forceDelete', [ArticleController::class, 'forceDelete']);
     // Route::put('articles/{id}', [ArticleController::class,'update']); // override to avoid Not Found error
     Route::get('/download/{filename}', [ChatController::class, 'download']);
 
-    Route::get('/articles/search', [ArticleController::class, 'search']);
 
     Route::get('/doctors/search', [DoctorController::class, 'searchDoctors']);
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -55,9 +55,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/appointments/{appointmentId}', [DoctorController::class, 'updateSchedule']);
         Route::get('/appointments', [DoctorController::class, 'doctorAppointments']);
         Route::delete('/appointment/{id}', [DoctorController::class, 'deleteAppointment']);
-    // doctor specializations
-});
-Route::get('/specializations', [DoctorController::class, 'getSpecializations']);
+        // doctor specializations
+    });
+    Route::get('/specializations', [DoctorController::class, 'getSpecializations']);
 
     // Admin Routes
     Route::prefix('admin')->group(function () {
@@ -86,9 +86,9 @@ use Symfony\Component\Mailer\Exception\HttpTransportException;
 
 Route::get('/test-email', function () {
     try {
-        Mail::raw('This is a test email from Laravel via Mailgun!', function ($message) {
-            $message->to('nuha.sammour02@gmail.com')
-                    ->subject('Test Email');
+        Mail::raw('This is a test email from Laravel via Gmail!', function ($message) {
+            $message->to('nuhasammour3@gmail.com')
+                ->subject('Test Email');
         });
         return 'Email sent!';
     } catch (HttpTransportException $e) {
