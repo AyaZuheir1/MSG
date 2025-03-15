@@ -153,7 +153,7 @@ class AdminController extends Controller
         }
         DB::beginTransaction();
         try {
-            // $doctorRequest->update(['status' => 'rejected']);
+            $doctorRequest->update(['status' => 'rejected']);
             DB::commit();
 
             $deviceToken = $request->token ?? null;
@@ -165,13 +165,13 @@ class AdminController extends Controller
                 $notifyStatus = 'No FCM token provided';
             }
 
+            Mail::to($doctorRequest->email)->send(new DoctorRequestStatusMail($doctorRequest, 'rejected'));
             return response()->json([
                 'message' => 'Doctor request rejected successfully!',
                 'notification_status' => $notifyStatus,
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            Mail::to($doctorRequest->email)->send(new DoctorRequestStatusMail($doctorRequest, 'rejected'));
 
             return response()->json([
                 'error' => 'Something went wrong while rejecting the doctor request.',

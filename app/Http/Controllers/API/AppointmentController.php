@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Patient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
@@ -103,9 +104,16 @@ class AppointmentController extends Controller
 
 
         $appointmentsData = $appointment->map(function ($appointment) {
+            $patient_id = $appointment->patient_id;
+            $patient = Patient::find($patient_id);
+            $patient_name = null;
+            if($patient){
+                $patient_name = $patient->first_name;
+            }
             return [
                 'id' => $appointment->id,
                 'doctor_id' => $appointment->doctor_id,
+                'patient_name' => $patient_name,
                 'date' => $appointment->date,
                 'start_time' => Carbon::createFromFormat('H:i:s', $appointment->start_time)->format('h:i A'),
                 'end_time' => Carbon::createFromFormat('H:i:s', $appointment->end_time)->format('h:i A'),
@@ -113,7 +121,7 @@ class AppointmentController extends Controller
                 'is_accepted' => $appointment->is_accepted,
             ];
         });
-
+       
         return response()->json([
             'status' => 'success',
             'appointments' => $appointmentsData,
