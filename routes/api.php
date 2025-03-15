@@ -7,13 +7,15 @@ use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\API\DoctorController;
 use App\Http\Controllers\API\ArticleController;
 use App\Http\Controllers\API\PatientController;
+use App\Http\Controllers\API\AppointmentController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/doctor/login', [AuthController::class, 'login']);
 Route::post('/patient/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    
+    Route::get('/article/search', [ArticleController::class, 'search']);
+
     //Article Routes
     Route::apiResource('articles', ArticleController::class);
     Route::post('/articles/{article}', [ArticleController::class, 'update']);
@@ -37,11 +39,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/service/rate', [PatientController::class, 'rateService']);
 
         // Patient Appointments
-        Route::get('available-appointments/{doctorId}', [PatientController::class, 'availableAppointments']);
-        Route::get('doctorappointments/{doctorId}', [PatientController::class, 'ShowAppointments']);
-        Route::post('book-appointment/{id}', [PatientController::class, 'bookAppointment']);
-        Route::get('appointments', [PatientController::class, 'myAppointments']);
-        Route::post('cancel-appointment/{id}', [PatientController::class, 'cancelAppointment']);
+        Route::get('available-appointments/{doctorId}', [AppointmentController::class, 'availableAppointments']);
+        Route::get('doctorappointments/{doctorId}', [AppointmentController::class, 'ShowAppointments']);
+        Route::post('book-appointment/{id}', [AppointmentController::class, 'bookAppointment']);
+        Route::get('appointments', [AppointmentController::class, 'myAppointments']);
+        Route::post('cancel-appointment/{id}', [AppointmentController::class, 'cancelAppointment']);
+        Route::get('/specializations', [AppointmentController::class, 'getSpecializations']);
+        Route::get('/doctors/{specialization}', [AppointmentController::class, 'getDoctorsBySpecialization']);
+        Route::get('/doctors/{doctorId}/availability', [AppointmentController::class, 'getDoctorAvailabilityByDay']);
     });
 
     // Doctor Routes
@@ -51,16 +56,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
         // Doctor Appointments
-        Route::post('/schedule', [DoctorController::class, 'addSchedule']);
-        Route::put('/appointments/{appointmentId}', [DoctorController::class, 'updateSchedule']);
-        Route::get('/appointments', [DoctorController::class, 'doctorAppointments']);
-        Route::delete('/appointment/{id}', [DoctorController::class, 'deleteAppointment']);
-        // doctor specializations
+        Route::post('/schedule', [AppointmentController::class, 'addSchedule']);
+        Route::put('/appointments/{appointmentId}', [AppointmentController::class, 'updateSchedule']);
+        Route::get('/appointments', [AppointmentController::class, 'doctorAppointments']);
+        Route::delete('/appointment/{id}', [AppointmentController::class, 'deleteAppointment']);
+        Route::get('/appointments/pending', [AppointmentController::class, 'getPendingAppointments']);
+        Route::put('/appointment/accept/{appointmentId}', [AppointmentController::class, 'acceptAppointment']);
+        Route::put('/appointment/reject/{appointmentId}', [AppointmentController::class, 'rejectAppointment']);
     });
-    Route::get('/specializations', [DoctorController::class, 'getSpecializations']);
 
     // Admin Routes
     Route::prefix('admin')->group(function () {
+        Route::get('/users-list', [AdminController::class, 'getUsersList']);
         Route::put('/approve-doctor/{id}', [AdminController::class, 'approveDoctorRequest']);
         Route::put('/reject-doctor/{id}', [AdminController::class, 'rejectDoctorRequest']);
         Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);
@@ -80,27 +87,6 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 Route::get('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resendOtp', [AuthController::class, 'resendOtp']);
-
-use Illuminate\Support\Facades\Mail;
-use Symfony\Component\Mailer\Exception\HttpTransportException;
-
-Route::get('/test-email', function () {
-    try {
-        Mail::raw('This is a test email from Laravel via Gmail!', function ($message) {
-            $message->to('nuhasammour3@gmail.com')
-                ->subject('Test Email');
-        });
-        return 'Email sent!';
-    } catch (HttpTransportException $e) {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'response' => $e->getResponse() ? $e->getResponse()->getContent(false) : 'No response body',
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
 
 //https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/register
 //https://medsupport-gaza-cfd5c72a1744.herokuapp.com//api/doctor/login

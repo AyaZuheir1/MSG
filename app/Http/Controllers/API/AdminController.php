@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use Exception;
 use App\Models\User;
 use App\Models\Doctor;
+use App\Models\Patient;
 use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,46 @@ use App\Http\Controllers\FCMController;
 
 class AdminController extends Controller
 {
+    public function getUsersList()
+    {
+        $doctors = Doctor::with('user')->get();
+    $patients = Patient::with('user')->get();
+        
+
+        return response()->json([
+            'doctors' => $doctors->map(function ($doctor) {
+                return [
+                    'id' => $doctor->id,
+                    'user_id' => $doctor->user_id,
+                    'first_name' => $doctor->first_name,
+                    'last_name' => $doctor->last_name,
+                    'email' => $doctor->user->email ?? 'N/A',  // ✅ التصحيح هنا
+                    'major' => $doctor->major,
+                    'country' => $doctor->country,
+                    'phone_number' => $doctor->phone_number,
+                    'average_rating' => $doctor->average_rating,
+                    'image' => asset("storage/{$doctor->image}"),
+                    'certificate' => asset("storage/{$doctor->certificate}"),
+                    'gender' => $doctor->gender,
+                ];
+            }),
+            'patients' => $patients->map(function ($patient) {
+                
+                return [
+                    'id' => $patient->id,
+                    'user_id' => $patient->user_id,
+                    'first_name' => $patient->first_name,
+                    'last_name' => $patient->last_name,
+                    'email' => $patient->user->email ?? 'N/A',  
+                    'age' => $patient->age,
+                    'gender' => $patient->gender,
+                    'phone_number' => $patient->phone_number,
+                    'address' => $patient->address,
+                ];
+            }),
+        ], 200);
+    }
+
     public function getDoctorRequests(Request $request)
     {
         if (!Gate::allows('manage-doctor-requests')) {

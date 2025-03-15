@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers\API;
 
+use Exception;
 use Carbon\Carbon;
+use App\Models\User;
 use App\Models\Doctor;
+use App\Models\Message;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use App\Models\DoctorRequest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Services\SupabaseStorageService;
-use Exception;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
+use App\Services\SupabaseStorageService;
+use Illuminate\Routing\Controllers\Middleware;
 
 class DoctorController extends Controller
 {
@@ -38,7 +38,7 @@ class DoctorController extends Controller
         $doctor = auth::user()->doctor;
 
         if (!$doctor) {
-            return response()->json(['error' => 'Doctor profile not found'], 404);
+            return response()->json(['error' => 'Patient profile not found'], 404);
         }
         return response()->json([
             'doctor' => [
@@ -52,13 +52,27 @@ class DoctorController extends Controller
                 'phone_number' => $doctor->phone_number,
                 'average_rating' => $doctor->average_rating,
                 'image' => $doctor->image,
-                'certificate' => $doctor->certificate,
+                'certificate' => asset("storage/{$doctor->certificate}"),
                 'gender' => $doctor->gender,
             ],
         ],);
     }
 
+    public function home()
+    {
+        $dailyAppointments = Appointment::whereDate('date', now()->toDateString())->get();
 
+        $bookings = Appointment::where('status', 'Not Available')->get();
+        $unreadMessagesCount = Message::where('receiver_id', Auth::id())
+            ->where('is_read', false)
+            ->count();
+
+        return response()->json([
+            'daily_appointments' => $dailyAppointments,
+            'bookings' => $bookings,
+            'unread_messages' => $unreadMessagesCount,
+        ]);
+    }
     public function register(Request $request)
     {
         $validatedData = $request->validate([
@@ -109,139 +123,108 @@ class DoctorController extends Controller
         }
         return response()->json(['message' =>  $e->getMessage()]);
     }
-    public function addSchedule(Request $request)
-    {
-        if (!Gate::allows('manage-schedule')) {
-            abort(403, 'Unauthorized action.');
-        }
-        $validated = $request->validate([
-            'date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required|date_format:h:i A',
-            'end_time' => 'required|date_format:h:i A',
-        ]);
+    // public function addSchedule(Request $request)
+    // {
+    //     if (!Gate::allows('manage-schedule')) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
+    //     $validated = $request->validate([
+    //         'date' => 'required|date|after_or_equal:today',
+    //         'start_time' => 'required|date_format:h:i A',
+    //         'end_time' => 'required|date_format:h:i A',
+    //     ]);
 
-        $doctorId = Auth::user()->doctor->id;
+    //     $doctorId = Auth::user()->doctor->id;
 
-        $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
-        $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
+    //     $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
+    //     $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
 
-        if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'End time must be later than start time.'
-            ], 422);
-        }
+    //     if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'End time must be later than start time.'
+    //         ], 422);
+    //     }
 
-        $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
-        if ($appointmentStart->isPast()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'The selected appointment time has already passed. Please choose a future time.'
-            ], 422);
-        }
+    //     $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
+    //     if ($appointmentStart->isPast()) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'The selected appointment time has already passed. Please choose a future time.'
+    //         ], 422);
+    //     }
 
-        $conflict = Appointment::where('doctor_id', $doctorId)
-            ->where('date', $validated['date'])
-            ->where(function ($query) use ($startTime24, $endTime24) {
-                $query->where(function ($q) use ($startTime24, $endTime24) {
-                    $q->where('start_time', '<', $endTime24)
-                        ->where('end_time', '>', $startTime24);
-                });
-            })->exists();
+    //     $conflict = Appointment::where('doctor_id', $doctorId)
+    //         ->where('date', $validated['date'])
+    //         ->where(function ($query) use ($startTime24, $endTime24) {
+    //             $query->where(function ($q) use ($startTime24, $endTime24) {
+    //                 $q->where('start_time', '<', $endTime24)
+    //                     ->where('end_time', '>', $startTime24);
+    //             });
+    //         })->exists();
 
-        if ($conflict) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
-            ], 422);
-        }
-        $startTime12 = Carbon::createFromFormat('H:i', $startTime24)->format('h:i A');
-        $endTime12 = Carbon::createFromFormat('H:i', $endTime24)->format('h:i A');
+    //     if ($conflict) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
+    //         ], 422);
+    //     }
 
-        $appointment = Appointment::create([
-            'doctor_id' => $doctorId,
-            'date' => $validated['date'],
-            'start_time' => $startTime24,
-            'end_time' => $endTime24,
-            'status' => 'Available',
-            'period' => $request->period,
-        ]);
+    //     $appointment = Appointment::create([
+    //         'doctor_id' => $doctorId,
+    //         'date' => $validated['date'],
+    //         'start_time' => $startTime24,
+    //         'end_time' => $endTime24,
+    //         'status' => 'Available',
+    //         'period' => $request->period,
+    //     ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Schedule added successfully!',
-            'appointment' => [
-                'id' => $appointment->id,
-                'doctor_id' => $appointment->doctor_id,
-                'date' => $appointment->date,
-                "start_time" => $startTime12,
-                'end_time' => $endTime12,
-                'status' => $appointment->status,
-                'period' => $appointment->period,
-            ]
-        ], 201);
-    }
+    //     return response()->json([
+    //         'status' => 'success',
+    //         'message' => 'Schedule added successfully!',
+    //         'appointment' => $appointment
+    //     ], 201);
+    // }
 
+    // public function doctorAppointments(Request $request)
+    // {
+    //     if (!Gate::allows('manage-schedule')) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
+    //     $doctorId = Auth::user()->doctor->id;
+    //     $status = $request->query('status', 'all');
+    //     $appointments = Appointment::where('doctor_id', $doctorId)
+    //         ->when($status !== 'all', function ($query) use ($status) {
+    //             return $query->where('status', $status);
+    //         })
+    //         ->orderBy('date', 'asc')
+    //         ->orderBy('start_time', 'asc')
+    //         ->get();
 
+    //     return response()->json([
+    //         'status' => 'success',
+    //         'appointments' => $appointments
+    //     ]);
+    // }
 
+    // public function deleteAppointment($id)
+    // {
+    //     if (!Gate::allows('manage-schedule')) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
+    //     $appointment = Appointment::findOrFail($id);
+    //     if (auth::user()->role !== 'doctor') {
+    //         return response()->json(['message' => 'Unauthorized. User is not a doctor.'], 403);
+    //     }
 
-    private function normalizeTimeTo12Hour($time, $period = null)
-    {
-        if (preg_match('/^\d{1,2}$/', $time)) {
-            $time .= ':00';
-        }
+    //     if ($appointment->doctor_id !== auth::user()->doctor->id) {
+    //         return response()->json(['message' => 'Unauthorized'], 403);
+    //     }
 
-        try {
-            $carbonTime = $period
-                ? Carbon::parse("$time $period")
-                : Carbon::parse($time);
+    //     $appointment->delete();
 
-            return $carbonTime->format('h:i A');
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-
-    public function doctorAppointments(Request $request)
-    {
-        if (!Gate::allows('manage-schedule')) {
-            abort(403, 'Unauthorized action.');
-        }
-        $doctorId = Auth::user()->doctor->id;
-        $status = $request->query('status', 'all');
-        $appointments = Appointment::where('doctor_id', $doctorId)
-            ->when($status !== 'all', function ($query) use ($status) {
-                return $query->where('status', $status);
-            })
-            ->orderBy('date', 'asc')
-            ->orderBy('start_time', 'asc')
-            ->get();
-
-        return response()->json([
-            'status' => 'success',
-            'appointments' => $appointments
-        ]);
-    }
-
-    public function deleteAppointment($id)
-    {
-        if (!Gate::allows('manage-schedule')) {
-            abort(403, 'Unauthorized action.');
-        }
-        $appointment = Appointment::findOrFail($id);
-        if (auth::user()->role !== 'doctor') {
-            return response()->json(['message' => 'Unauthorized. User is not a doctor.'], 403);
-        }
-
-        if ($appointment->doctor_id !== auth::user()->doctor->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $appointment->delete();
-
-        return response()->json(['message' => 'Appointment deleted successfully!']);
-    }
+    //     return response()->json(['message' => 'Appointment deleted successfully!']);
+    // }
     /**
      * Display a listing of the resource.
      */
@@ -262,41 +245,7 @@ class DoctorController extends Controller
         }
         return response()->json(['doctor' => $doctor]);
     }
-    public function getSpecializations(): JsonResponse
-    {
-        try {
-            $query = Doctor::select(
-                'major',
-                DB::raw('COUNT(*) as doctor_count')
-            )
-                ->groupBy('major')
-                ->orderBy('major', 'asc');
 
-            // Add optional search parameter
-            if (request()->has('search')) {
-                $query->where('major', 'like', '%' . request('search') . '%');
-            }
-
-            $specializations = $query->paginate(10);
-
-            return response()->json([
-                'status' => 'success',
-                'doctor-specializations' => $specializations->items(),
-                'pagination' => [
-                    'total' => $specializations->total(),
-                    'per_page' => $specializations->perPage(),
-                    'current_page' => $specializations->currentPage(),
-                    'last_page' => $specializations->lastPage()
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to retrieve specializations',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
     /**
      * Update the specified resource in storage.
      */
@@ -387,81 +336,81 @@ class DoctorController extends Controller
             'doctors' => $doctors
         ]);
     }
-    public function updateSchedule(Request $request, $appointmentId)
-    {
-        if (!Gate::allows('manage-schedule')) {
-            abort(403, 'Unauthorized action.');
-        }
-        $validated = $request->validate([
-            'date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required|date_format:h:i A',
-            'end_time' => 'required|date_format:h:i A',
-            'period' => "required|string"
-        ]);
+    // public function updateSchedule(Request $request, $appointmentId)
+    // {
+    //     if (!Gate::allows('manage-schedule')) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
+    //     $validated = $request->validate([
+    //         'date' => 'required|date|after_or_equal:today',
+    //         'start_time' => 'required|date_format:h:i A',
+    //         'end_time' => 'required|date_format:h:i A',
+    //         'period' => "required|string"
+    //     ]);
 
-        $appointment = Appointment::findOrFail($appointmentId);
+    //     $appointment = Appointment::findOrFail($appointmentId);
 
-        $doctorId = Auth::user()->doctor->id;
-        if ($appointment->doctor_id !== $doctorId) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You do not have permission to modify this schedule.'
-            ], 403);
-        }
+    //     $doctorId = Auth::user()->doctor->id;
+    //     if ($appointment->doctor_id !== $doctorId) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'You do not have permission to modify this schedule.'
+    //         ], 403);
+    //     }
 
-        if ($appointment->status !== 'Available') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'This appointment has already been booked and cannot be modified.'
-            ], 422);
-        }
+    //     if ($appointment->status !== 'Available') {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'This appointment has already been booked and cannot be modified.'
+    //         ], 422);
+    //     }
 
-        $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
-        $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
+    //     $startTime24 = Carbon::createFromFormat('h:i A', $validated['start_time'])->format('H:i');
+    //     $endTime24 = Carbon::createFromFormat('h:i A', $validated['end_time'])->format('H:i');
 
-        if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'End time must be later than start time.'
-            ], 422);
-        }
+    //     if (Carbon::parse($startTime24)->greaterThanOrEqualTo(Carbon::parse($endTime24))) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'End time must be later than start time.'
+    //         ], 422);
+    //     }
 
-        $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
-        if ($appointmentStart->isPast()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'The selected appointment time has already passed. Please choose a future time.'
-            ], 422);
-        }
+    //     $appointmentStart = Carbon::parse($validated['date'] . ' ' . $startTime24);
+    //     if ($appointmentStart->isPast()) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'The selected appointment time has already passed. Please choose a future time.'
+    //         ], 422);
+    //     }
 
-        $conflict = Appointment::where('doctor_id', $doctorId)
-            ->where('date', $validated['date'])
-            ->where('id', '!=', $appointmentId)
-            ->where(function ($query) use ($startTime24, $endTime24) {
-                $query->where(function ($q) use ($startTime24, $endTime24) {
-                    $q->where('start_time', '<', $endTime24)
-                        ->where('end_time', '>', $startTime24);
-                });
-            })->exists();
+    //     $conflict = Appointment::where('doctor_id', $doctorId)
+    //         ->where('date', $validated['date'])
+    //         ->where('id', '!=', $appointmentId)
+    //         ->where(function ($query) use ($startTime24, $endTime24) {
+    //             $query->where(function ($q) use ($startTime24, $endTime24) {
+    //                 $q->where('start_time', '<', $endTime24)
+    //                     ->where('end_time', '>', $startTime24);
+    //             });
+    //         })->exists();
 
-        if ($conflict) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
-            ], 422);
-        }
+    //     if ($conflict) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'The selected time slot is unavailable due to a scheduling conflict. Please choose a different time.'
+    //         ], 422);
+    //     }
 
-        $appointment->update([
-            'date' => $validated['date'],
-            'start_time' => $startTime24,
-            'end_time' => $endTime24,
-            'period' => $validated['period'],
-        ]);
+    //     $appointment->update([
+    //         'date' => $validated['date'],
+    //         'start_time' => $startTime24,
+    //         'end_time' => $endTime24,
+    //         'period' => $validated['period'],
+    //     ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Schedule updated successfully!',
-            'appointment' => $appointment
-        ]);
-    }
+    //     return response()->json([
+    //         'status' => 'success',
+    //         'message' => 'Schedule updated successfully!',
+    //         'appointment' => $appointment
+    //     ]);
+    // }
 }

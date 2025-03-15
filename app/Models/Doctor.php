@@ -41,7 +41,10 @@ class Doctor extends Model
     {
         return $this->hasOne(Doctor::class);
     }
-
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function appointments()
     {

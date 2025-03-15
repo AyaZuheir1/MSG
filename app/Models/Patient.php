@@ -29,6 +29,10 @@ class Patient extends Model
     {
         return $this->hasMany(Prescription::class, 'p_id');
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function reviews()
     {
