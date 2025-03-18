@@ -12,12 +12,16 @@ use App\Http\Controllers\API\AppointmentController;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/doctor/login', [AuthController::class, 'login']);
 Route::post('/patient/login', [AuthController::class, 'login']);
+Route::get('/articles', [ArticleController::class, 'index']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/article/search', [ArticleController::class, 'search']);
-
     //Article Routes
-    Route::apiResource('articles', ArticleController::class);
+    Route::post('/articles', [ArticleController::class, 'store']);
+    Route::get('/articles/{article}', [ArticleController::class, 'show']);
+    Route::put('/articles/{article}', [ArticleController::class, 'update']);
+    Route::patch('/articles/{article}', [ArticleController::class, 'update']);
+    Route::delete('/articles/{article}', [ArticleController::class, 'destroy']);
     Route::post('/articles/{article}', [ArticleController::class, 'update']);
     Route::get('/article/search', [ArticleController::class, 'search']);
     // Route::get('/articles/{id}/restore', [ArticleController::class, 'restore']);
@@ -68,9 +72,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Admin Routes
     Route::prefix('admin')->group(function () {
         Route::get('/users-list', [AdminController::class, 'getUsersList']);
+        Route::get('/doctors', [AdminController::class, 'getAllDoctors']);
+        Route::get('/patients', [AdminController::class, 'getAllPatients']);
         Route::put('/approve-doctor/{id}', [AdminController::class, 'approveDoctorRequest']);
         Route::put('/reject-doctor/{id}', [AdminController::class, 'rejectDoctorRequest']);
         Route::get('/doctor-requests', [AdminController::class, 'getDoctorRequests']);
+        Route::delete('/deletepatient/{id}', [AdminController::class, 'deletePatient']); 
+        Route::delete('/deletedoctor/{id}', [AdminController::class, 'deleteDoctor']);
     });
 });
 Route::middleware('auth:sanctum')->post('/send-message', [ChatController::class, 'sendMessage']);

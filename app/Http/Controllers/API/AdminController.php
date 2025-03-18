@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DoctorRequestStatusMail;
 use App\Http\Controllers\FCMController;
@@ -20,9 +21,12 @@ class AdminController extends Controller
 {
     public function getUsersList()
     {
+        if (!Gate::allows('manage-doctor-requests')) {
+            return response()->json(['error' => 'Unauthorized action.'], 403);
+        }
         $doctors = Doctor::with('user')->get();
-    $patients = Patient::with('user')->get();
-        
+        $patients = Patient::with('user')->get();
+
 
         return response()->json([
             'doctors' => $doctors->map(function ($doctor) {
@@ -31,7 +35,7 @@ class AdminController extends Controller
                     'user_id' => $doctor->user_id,
                     'first_name' => $doctor->first_name,
                     'last_name' => $doctor->last_name,
-                    'email' => $doctor->user->email ?? 'N/A',  // ✅ التصحيح هنا
+                    'email' => $doctor->user->email ?? 'N/A',
                     'major' => $doctor->major,
                     'country' => $doctor->country,
                     'phone_number' => $doctor->phone_number,
@@ -42,13 +46,13 @@ class AdminController extends Controller
                 ];
             }),
             'patients' => $patients->map(function ($patient) {
-                
+
                 return [
                     'id' => $patient->id,
                     'user_id' => $patient->user_id,
                     'first_name' => $patient->first_name,
                     'last_name' => $patient->last_name,
-                    'email' => $patient->user->email ?? 'N/A',  
+                    'email' => $patient->user->email ?? 'N/A',
                     'age' => $patient->age,
                     'gender' => $patient->gender,
                     'phone_number' => $patient->phone_number,
@@ -122,7 +126,7 @@ class AdminController extends Controller
 
             DB::commit();
 
-            $deviceToken =   "aaaa"; //$user->fcm_token; // Using the newly created user’s FCM token
+            $deviceToken =   "aaaa"; 
             $title = "Your request has been approved";
             $body = "Congratulations! you are a doctor in MEDSUPPORTGAZA";
 
@@ -178,5 +182,81 @@ class AdminController extends Controller
                 'details' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function getAllPatients()
+    {
+        if (!Gate::allows('manage-doctor-requests')) {
+            return response()->json(['error' => 'Unauthorized action.'], 403);
+        }
+        $patients = Patient::all();
+        return response()->json([
+            'patients' => $patients->map(function ($patient) {
+
+                return [
+                    'id' => $patient->id,
+                    'user_id' => $patient->user_id,
+                    'first_name' => $patient->first_name,
+                    'last_name' => $patient->last_name,
+                    'email' => $patient->user->email ?? 'N/A',
+                    'age' => $patient->age,
+                    'gender' => $patient->gender,
+                    'phone_number' => $patient->phone_number,
+                    'address' => $patient->address,
+                ];
+            }),
+        ], 200);
+    }
+
+    public function getAllDoctors()
+    {
+        if (!Gate::allows('manage-doctor-requests')) {
+            return response()->json(['error' => 'Unauthorized action.'], 403);
+        }
+        $doctors = Doctor::all();
+        return response()->json([
+            'doctors' => $doctors->map(function ($doctor) {
+                return [
+                    'id' => $doctor->id,
+                    'user_id' => $doctor->user_id,
+                    'first_name' => $doctor->first_name,
+                    'last_name' => $doctor->last_name,
+                    'email' => $doctor->user->email ?? 'N/A',
+                    'major' => $doctor->major,
+                    'country' => $doctor->country,
+                    'phone_number' => $doctor->phone_number,
+                    'average_rating' => $doctor->average_rating,
+                    'image' => asset("storage/{$doctor->image}"),
+                    'certificate' => asset("storage/{$doctor->certificate}"),
+                    'gender' => $doctor->gender,
+                ];
+            })
+        ], 200);
+    }
+
+    public function deletePatient($id)
+    {
+        $patient = Patient::findOrFail($id);
+
+        $userId = $patient->user_id;
+
+        $patient->delete();
+
+        User::findOrFail($userId)->delete();
+
+        return response()->json(['status' => 'success', 'message' => 'Patient  deleted successfully!']);
+    }
+
+    public function deleteDoctor($id)
+    {
+        $doctor = Doctor::findOrFail($id);
+
+        $userId = $doctor->user_id;
+
+        $doctor->delete();
+
+        User::findOrFail($userId)->delete();
+
+        return response()->json(['status' => 'success', 'message' => 'Doctor deleted successfully!']);
     }
 }
