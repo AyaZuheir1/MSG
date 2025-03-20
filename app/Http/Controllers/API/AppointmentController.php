@@ -107,7 +107,7 @@ class AppointmentController extends Controller
             $patient_id = $appointment->patient_id;
             $patient = Patient::find($patient_id);
             $patient_name = null;
-            if($patient){
+            if ($patient) {
                 $patient_name = $patient->first_name;
             }
             return [
@@ -121,7 +121,7 @@ class AppointmentController extends Controller
                 'is_accepted' => $appointment->is_accepted,
             ];
         });
-       
+
         return response()->json([
             'status' => 'success',
             'appointments' => $appointmentsData,
@@ -363,27 +363,41 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::findOrFail($id);
         $patientId = Auth::user()->patient->id;
+        $existingAppointment = Appointment::where('patient_id', $patientId)
+            ->where('doctor_id', $appointment->doctor_id)
+            ->where('date', $appointment->date)
+            ->where('start_time', $appointment->start_time)
+            ->where('end_time', $appointment->end_time)
+            ->where('is_accepted', 'pending')
+            ->exists();
+
+        if ($existingAppointment) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You have already requested this appointment. Please wait for approval.'
+            ], 400);
+        }
 
         if ($appointment->is_accepted == 'pending' && $appointment->patient_id == $patientId) {
             return response()->json(['status' => 'error', 'message' => 'Appointment is already requested'], 400);
         }
 
         if ($appointment->is_accepted != 'accepted') {
-            $newAppointment = $appointment->replicate(); 
-            $newAppointment->patient_id = $patientId;  
-            $newAppointment->is_accepted = 'pending'; 
+            $newAppointment = $appointment->replicate();
+            $newAppointment->patient_id = $patientId;
+            $newAppointment->is_accepted = 'pending';
             $newAppointment->save();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Appointment requested successfully! A new appointment has been created.'
+                'message' => 'Appointment requested successfully! A new appointment has been created.',
+                'appointment_id' => $newAppointment->id,
             ]);
         }
 
-        // التحقق من وجود تعارض في المواعيد
         $conflict = Appointment::where('patient_id', $patientId)
             ->where('date', $appointment->date)
-            ->where('is_accepted', 'accepted')  // التأكد من أن الموعد مقبول
+            ->where('is_accepted', 'accepted')
             ->where(function ($query) use ($appointment) {
                 $query->whereBetween('start_time', [$appointment->start_time, $appointment->end_time])
                     ->orWhereBetween('end_time', [$appointment->start_time, $appointment->end_time]);
@@ -403,9 +417,13 @@ class AppointmentController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Appointment requested successfully!'
+            'message' => 'Appointment requested successfully!',
+            'appointment_id' => $appointment->id,  
         ]);
     }
+
+
+
 
     public function myAppointments()
     {

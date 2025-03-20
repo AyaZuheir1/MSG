@@ -52,7 +52,7 @@ class DoctorController extends Controller
                 'phone_number' => $doctor->phone_number,
                 'average_rating' => $doctor->average_rating,
                 'image' => $doctor->image,
-                'certificate' => asset("storage/{$doctor->certificate}"),
+                'certificate' =>$doctor->certificate,
                 'gender' => $doctor->gender,
             ],
         ],);
