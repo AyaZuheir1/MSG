@@ -46,7 +46,7 @@ class DoctorController extends Controller
                 'user_id' => $doctor->user_id,
                 'first_name' => $doctor->first_name,
                 'last_name' => $doctor->last_name,
-                'email' => $request->user()->email,
+                'email' => $doctor->email,
                 'major' => $doctor->major,
                 'country' => $doctor->country,
                 'phone_number' => $doctor->phone_number,

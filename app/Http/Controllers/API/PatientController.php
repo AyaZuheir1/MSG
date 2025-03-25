@@ -38,7 +38,7 @@ class PatientController extends Controller
                 'user_id' => $patient->user_id,
                 'first_name' => $patient->first_name,
                 'last_name' => $patient->last_name,
-                'email' => auth::user()->email,
+                'email' => $patient->email,
                 'age' => $patient->age,
                 'gender' => $patient->gender,
                 'phone_number' => $patient->phone_number,
