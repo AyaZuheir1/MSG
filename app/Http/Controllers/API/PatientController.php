@@ -88,16 +88,18 @@ class PatientController extends Controller
             $token = $user->createToken('AuthToken')->plainTextToken;
 
             DB::commit();
-            return $user;
+            // return $user;
             return response()->json([
                 'message' => 'Account created successfully.',
+                'token' => $token,
                 'user' => $user,
                 'patient' => $patient,
-                'token' => $token,
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Failed to create account.'], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
+
+            // return response()->json(['error' => 'Failed to create account.'], 500);
         }
     }
 

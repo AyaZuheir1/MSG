@@ -16,7 +16,18 @@ class Admin extends Model
         'number',
         'job_title',
     ];
+    protected $appends = ['email']; 
+    protected $hidden = ['created_at', 'updated_at'];
 
+
+    public function getEmailAttribute()
+    {
+        return $this->user ? $this->user->email : null;
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id'); 
+    }
     public function articles()
     {
         return $this->hasMany(Article::class);

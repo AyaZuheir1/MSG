@@ -20,6 +20,15 @@ class Patient extends Model
         'address',
     ];
 
+    protected $appends = ['email']; 
+    protected $hidden = ['created_at', 'updated_at'];
+
+
+    public function getEmailAttribute()
+    {
+        return $this->user ? $this->user->email : null;
+    }
+
     public function appointments()
     {
         return $this->hasMany(Appointment::class,'patient_id');

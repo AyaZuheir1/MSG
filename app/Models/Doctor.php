@@ -25,6 +25,13 @@ class Doctor extends Model
         'gender',
         'fcm_token',
     ];
+    protected $appends = ['email']; 
+    protected $hidden = ['created_at', 'updated_at'];
+
+    public function getEmailAttribute()
+    {
+        return $this->user ? $this->user->email : null;
+    }
     protected function firstName(): Attribute
     {
         return Attribute::make(
